@@ -1,0 +1,7 @@
+{
+  "auto_accept_free_trial": 1,
+  "total_participants_limit": 15,
+  "invite_discount": 25,
+  "welcome_message": "youre welcome!",
+  "limit_participants_message": "reached limit!"
+}

@@ -1,0 +1,129 @@
+const sqlite3 = require('sqlite3').verbose();
+const fs = require('fs');
+const path = require('path');
+
+//модуль для работы с базой данных
+class Database {
+    constructor(dbFilePath) {
+        this.dbFilePath = dbFilePath;
+        this.db = null;
+    }
+
+    async insert(tableName, params){
+        return new Promise((resolve, reject) => {
+            //значения полей для вствки
+            const fields = Object.keys(params);
+            const values = Object.values(params).map(field => {
+                if(typeof field === 'number') return field;
+                else return `'${field}'`;
+            });
+
+            //формирование запроса
+            const sql = `INSERT INTO '${tableName}' (${fields.join(', ')}) VALUES (${values.join(', ')})`;
+
+            // Выполнение запроса
+            this.executeNoDataReturning(sql, true).then(result => resolve(result)).catch(err => {
+                reject(err);
+            });
+        });
+    }
+
+    async find(tableName, params, limit){
+        return new Promise((resolve, reject) => {
+
+            //значения полей для вствки
+            const sql_params = Object.keys(params).map(field => {
+                const convertedValue = typeof params[field] === 'number' ? params[field] : `'${params[field]}'`;
+                return `${field} = ${convertedValue}`;
+            })
+
+            //установка ограничения
+            const limitClause = limit ? ` LIMIT ${limit}` : '';
+
+            //установка условия
+            const condition = (sql_params.length) ? ` WHERE ${sql_params.join(' AND ')}` : '';
+
+            //формирование запроса
+            const sql = `SELECT * FROM '${tableName}'${condition}${limitClause}`;
+
+            // Выполнение запроса
+            this.executeWithReturning(sql).then(result => {
+                //если возвращать только одну запись
+                if((typeof limit === 'boolean' && limit) || limit === 1){
+                    result = result[0];
+                }
+
+                resolve(result)
+
+            //обработка ошибок
+            }).catch(err => reject(err));
+        })
+    }
+
+    //запрос без возвращаемого значения
+    async executeNoDataReturning(sql, returnId = false) {
+        return new Promise((resolve, reject) => {
+            this.db.run(sql, function(err) {
+                if (err) return reject(new Error(`Не удалось выполнить запрос: ${err.message}`));
+                resolve((returnId) ? this.lastID : undefined);
+            });
+        });
+    }
+
+    //запрос с возвращаемым значением
+    async executeWithReturning(sql) {
+        return new Promise((resolve, reject) => {
+            this.db.all(sql, [], function(err, rows) {
+                if (err) return reject(new Error(`Не удалось выполнить запрос: ${err.message}`));
+                resolve(rows);
+            });
+        });
+    }
+
+    // Метод для инициализации базы данных
+    connect(dbPath, sqlFilePath) {
+        return new Promise((resolve, reject) => {
+            this.db = new sqlite3.Database(this.dbFilePath, (err) => {
+                if (err) return reject(new Error(`Не удалось подключиться к базе данных: ${err.message}`));
+
+                //включение ограничений внешних ключей
+                this.db.run('PRAGMA foreign_keys = ON', (err) => {
+                    if (err) return reject(new Error(`Не удалось включить внешние ключи: ${err.message}`));
+                });
+
+                //логи и файл инициализации
+                console.log('База данных подключена⚡');
+                const sqlFile = path.resolve(sqlFilePath);
+
+                //проверка на существование не пустой базы данных
+                if(fs.statSync(dbPath).size > 0) {
+                    console.log('Инициазация не трубется 👌');
+                    return resolve();
+                }
+
+                // Читаем SQL файл и выполняем его содержимое
+                fs.readFile(sqlFile, 'utf8', (err, data) => {
+                    if (err) return reject(new Error(`Не удалось считать SQL файл: ${err.message}`));
+
+                    this.db.exec(data, (err) => {
+                        if (err) return reject(new Error(`Не удалось выполнить SQL файл: ${err.message}`));
+                        console.log('База данных успешно инициализирована ✨');
+                        resolve();
+                    });
+                });
+            });
+        });
+    }
+
+    // Закрытие базы данных
+    close() {
+        if (this.db) {
+            this.db.close((err) => {
+                if (err) throw new Error(`Ошибка при закрытии базы данных: ${err.message}`) 
+                else console.log('База данных закрыта. 👋👋👋');
+            });
+        }
+    }
+}
+
+module.exports = Database;
