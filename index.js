@@ -12,6 +12,7 @@ const fs = require('fs');
 
 // Конфигурация
 let config = require('./config.json');
+const { resolve } = require('path');
 
 //основаная конфигурация
 const PORT = process.env.PORT;
@@ -109,6 +110,18 @@ app.post('/offer', async (req, res) => {
     // Добавление нового заказа
     try{
 
+        //проверка бесплатной подписки на первый заказ
+        if(body.sub_id === 'free'){
+            //поиск отметки на первый заказ
+            const isUserIsMakeFirstOffer = await USER.FIND({telegram_id: body.user_id, free_trial_used: 1}, true);
+
+            //отказ пользователю в бесплатной подписке если заказ не первый
+            if(isUserIsMakeFirstOffer){
+                response.status(403, 'Пробная подписка доступна только на первый заказ');
+                return response.send();
+            }
+        }
+
         //если промокод не передан - применяется промокод по умолчанию
         if(!body.promo_id){
             offer_promo = await PROMO.FIND({name_id: 'default'}, true);
@@ -150,28 +163,8 @@ app.post('/offer', async (req, res) => {
 
     //тут считаем скидку и возвращаем объект оплаты
     try{
-        const offer_sub = await SUB.FIND({name_id: body.sub_id}, true);
-        const offer_user = await USER.FIND({telegram_id: body.user_id}, true);
-
-        //скидки на оформление
-        const promoPrice = offer_sub.price * (1 - offer_promo.discount/100);
-        const invitPrice = promoPrice * (1 - config.invite_discount/100 * offer_user.invite_count);
-        const priceToPay = Math.ceil(invitPrice);
-
-        //исключение отрицательной цены
-        const payment = (priceToPay < 0) ? 0 : priceToPay;
-
-        // const payment = Math.ceil(offer_sub.price * (1 - offer_promo.discount/100));
-
-        //информация для пользователя
-        const offerDetails = {
-            offer_id,
-            subname: offer_sub.title,
-            price: offer_sub.price,
-            toPay: payment,
-            discount: offer_promo.discount,
-            promoName: offer_promo.title
-        }
+        //создание деталей подписки
+        const offerDetails = await createOfferDetails(offer_id);
 
         //проверка автооформление бесплатной подписки
         if(config.auto_accept_free_trial && body.sub_id === 'free'){
@@ -218,29 +211,8 @@ app.post('/resolveOffer', async (req, res) => {
     }
 
     try{
-        //рассматриваемый заказ
-        const accepting = await OFFER.FIND({offer_id}, true);
-        const offer_sub = await SUB.FIND({name_id: accepting.sub_id}, true);
-        const offer_promo = await PROMO.FIND({name_id: accepting.promo_id}, true);
-        const offer_user = await USER.FIND({telegram_id: accepting.user_id}, true);
-
-        //скидки на оформление
-        const promoPrice = offer_sub.price * (1 - offer_promo.discount/100);
-        const invitPrice = promoPrice * (1 - config.invite_discount/100 * offer_user.invite_count);
-        const priceToPay = Math.ceil(invitPrice);
-
-        //исключение отрицательной цены
-        const payment = (priceToPay < 0) ? 0 : priceToPay;
-
-        //информация для пользователя
-        const offerDetails = {
-            offer_id,
-            subname: offer_sub.title,
-            price: offer_sub.price,
-            toPay: payment,
-            discount: offer_promo.discount,
-            promoName: offer_promo.title
-        }
+        //получение данных о заказе
+        const offerDetails = await createOfferDetails(offer_id);
 
         //метод имеет внутренюю обработку ошибок
         await confirOffer(offerDetails, response);
@@ -292,6 +264,35 @@ app.get('/subscription', async (req, res) => {
         return databaseErrorHandler(err, response).send();
     }
 });
+
+//генерация ответа для заказа пользователя
+async function createOfferDetails(offer_id){
+    //рассматриваемый заказ
+    const accepting = await OFFER.FIND({offer_id}, true);
+    const offer_sub = await SUB.FIND({name_id: accepting.sub_id}, true);
+    const offer_promo = await PROMO.FIND({name_id: accepting.promo_id}, true);
+    const offer_user = await USER.FIND({telegram_id: accepting.user_id}, true);
+
+    //скидки на оформление
+    const promoPrice = offer_sub.price * (1 - offer_promo.discount/100);
+    const invitPrice = promoPrice * (1 - config.invite_discount/100 * offer_user.invite_count);
+    const priceToPay = Math.ceil(invitPrice);
+
+    //исключение отрицательной цены
+    const payment = (priceToPay < 0) ? 0 : priceToPay;
+
+    //информация для пользователя
+    const offerDetails = {
+        offer_id,
+        subname: offer_sub.title,
+        price: offer_sub.price,
+        toPay: payment,
+        discount: offer_promo.discount,
+        promoName: offer_promo.title
+    }
+    
+    return offerDetails;
+}
 
 async function confirOffer(offerInfo, response){
 
@@ -357,9 +358,15 @@ async function confirOffer(offerInfo, response){
         // Создаем нового пользователя
         const requestData = await MarzbanAPI.CREATE_USER(userData);
 
-        //установка текста подписки пользователя
+        //установка текста подписки пользователя и отметка что был заказ
         await OFFER.SET_CONNECTION_STRING(offerDetails.offer_id, requestData.links[0]);
         await OFFER.RESOLVE(offerDetails.offer_id);
+        
+        //проверка заказа на первый
+        const offerUserFreeTrial = await USER.FIND({telegram_id: offerDetails.user_id, free_trial_used: 0}, true);
+
+        //если заказ был первый - отметить пользователя как использовавший бесплатную подписку
+        if(offerUserFreeTrial) await USER.UPDATE(telegram_id, {free_trial_used: 1});
 
         //если подписка бесплатная, убрать информацию о скидке и к оплате
         if(offerDetails.sub_id === 'free'){

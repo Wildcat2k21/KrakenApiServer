@@ -27,7 +27,6 @@ class USER {
 
     //отметка использования временной подписки
     static async UPDATE(telegram_id, update){
-        if(typeof value === 'string') value = `'${value}'`;
         return await USER.database.update('user', update, {telegram_id});
     }
 
