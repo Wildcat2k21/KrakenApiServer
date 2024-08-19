@@ -104,7 +104,6 @@ class Database {
     //запрос без возвращаемого значения
     async executeNoDataReturning(sql, returnId = false) {
         return new Promise((resolve, reject) => {
-            console.log(sql);
             this.db.run(sql, function(err) {
                 if (err) return reject(new Error(`Не удалось выполнить запрос: ${err.message}`));
                 resolve((returnId) ? this.lastID : undefined);

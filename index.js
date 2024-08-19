@@ -151,7 +151,17 @@ app.post('/offer', async (req, res) => {
     //тут считаем скидку и возвращаем объект оплаты
     try{
         const offer_sub = await SUB.FIND({name_id: body.sub_id}, true);
-        const payment = Math.ceil(offer_sub.price * (1 - offer_promo.discount/100));
+        const offer_user = await USER.FIND({telegram_id: body.user_id}, true);
+
+        //скидки на оформление
+        const promoPrice = offer_sub.price * (1 - offer_promo.discount/100);
+        const invitPrice = promoPrice * (1 - config.invite_discount/100 * offer_user.invite_count);
+        const priceToPay = Math.ceil(invitPrice);
+
+        //исключение отрицательной цены
+        const payment = (priceToPay < 0) ? 0 : priceToPay;
+
+        // const payment = Math.ceil(offer_sub.price * (1 - offer_promo.discount/100));
 
         //информация для пользователя
         const offerDetails = {
@@ -360,9 +370,7 @@ async function confirOffer(offerInfo, response){
         else if(offerDetails.promo_id === 'friend' && offerDetails.invite_code){
             //поиск пользователя с таким промокодом                   ИМЕЕТ УЖЕ НЕ ТОТ КОД TELEGRAM ИЗ-ЗА ПОДМЕНЫ
             const invitePromoCodeOwner = await USER.FIND({invite_code: offerDetails.invite_code}, true);
-            console.log(1, invitePromoCodeOwner.telegram_id);
             await USER.INCREMENT_INVITE_COUNTER(invitePromoCodeOwner.telegram_id);
-            console.log(2, invitePromoCodeOwner.telegram_id);
         }
         else {}
 
