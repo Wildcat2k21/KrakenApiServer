@@ -30,8 +30,8 @@ CREATE TABLE user (
 );
 
 -- Заказы
-CREATE TABLE `order` (
-    order_id INTEGER PRIMARY KEY,
+CREATE TABLE offer (
+    offer_id INTEGER PRIMARY KEY,
     user_id INTEGER NOT NULL,
     sub_id INTEGER NOT NULL,
     promo_id TEXT NOT NULL,

@@ -33,7 +33,7 @@ function checkUserFields(data){
 
 function checkSubInfoFields(data){
     const requedFields = {
-        'order_id': {
+        'offer_id': {
             name: 'Идентификатор заказа',
             type: 'number'
         },
@@ -61,7 +61,7 @@ function checkSubInfoFields(data){
     checkMiddleFunction(requedFields, data);
 }
 
-function checkOrderFields(data){
+function checkOfferFields(data){
     const requedFields = {
         'user_id': {
             name: 'Идентификатор пользователя',
@@ -136,4 +136,4 @@ function checkMiddleFunction(requedFields, data){
     }
 }
 
-module.exports = {checkUserFields, checkOrderFields, checkConfigFields, checkSubInfoFields};
+module.exports = {checkUserFields, checkOfferFields, checkConfigFields, checkSubInfoFields};

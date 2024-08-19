@@ -79,13 +79,13 @@ class Database {
             })
 
             //установка ограничения
-            const limitClause = limit ? ` LIMIT ${limit}` : '';
+            const limitClause = limit ? ` LIMIT ${Number(limit)}` : '';
 
             //установка условия
             const condition = (sql_params.length) ? ` WHERE ${sql_params.join(' AND ')}` : '';
 
             //формирование запроса
-            const sql = `SELECT * FROM '${tableName}'${condition}${limitClause}`;
+            const sql = `SELECT * FROM ${tableName}${condition}${limitClause}`;
 
             // Выполнение запроса
             this.executeWithReturning(sql).then(result => {

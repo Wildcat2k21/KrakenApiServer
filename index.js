@@ -1,10 +1,10 @@
-const {USER, ORDER, SUB, PROMO} = require('./modules/Entities.js');
+const {USER, OFFER, SUB, PROMO} = require('./modules/Entities.js');
 const MarzbanAPI = require('./modules/MarzbanAPI.js');
 const Response = require('./modules/Response.js');
 const Database = require('./modules/Database.js');
 const {Time} = require('./modules/Other.js');
 const express = require('express');
-const { checkUserFields, checkOrderFields,
+const { checkUserFields, checkOfferFields,
         checkConfigFields, checkSubInfoFields
 } = require('./modules/Data.js');
 require('dotenv').config();
@@ -26,7 +26,7 @@ initConnection();
 
 // Инициализация сущностей
 const user = new USER(db);
-const order = new ORDER(db);
+const offer = new OFFER(db);
 const sub = new SUB(db);
 const promo = new PROMO(db);
 
@@ -89,17 +89,17 @@ app.get('/user', async (req, res) => {
 })
 
 // Оформление заказов
-app.post('/order', async (req, res) => {
+app.post('/offer', async (req, res) => {
 
     const response = new Response(res);
     const body = req.body;
     
     //идентификатор заказа
-    let order_promo = undefined, order_new = undefined;
+    let offer_promo = undefined, offer_id = undefined;
 
     // Проверка на поля заказа
     try{
-        checkOrderFields(body);
+        checkOfferFields(body);
     }
     catch(err){
         response.status(417, err.message);
@@ -111,7 +111,7 @@ app.post('/order', async (req, res) => {
 
         //если промокод не передан - применяется промокод по умолчанию
         if(!body.promo_id){
-            order_promo = await PROMO.FIND({name_id: 'default'}, true);
+            offer_promo = await PROMO.FIND({name_id: 'default'}, true);
         }
         else {
             //проверка на пользовательский промокод
@@ -119,29 +119,29 @@ app.post('/order', async (req, res) => {
 
             //выставление промокодов
             if(invitedByUser){
-                order_promo = await PROMO.FIND({name_id: 'friend'}, true);
+                offer_promo = await PROMO.FIND({name_id: 'friend'}, true);
                 //вынесение кода приглашения в отдельное поле
                 body.invite_code = body.promo_id;
             }
             else if(body.promo_id !== 'friend'){
-                order_promo = await PROMO.FIND({name_id: body.promo_id}, true);
+                offer_promo = await PROMO.FIND({name_id: body.promo_id}, true);
             }
             else {
-                order_promo = undefined;
+                offer_promo = undefined;
             }
 
             //проверка существования промокода
-            if(!order_promo){
+            if(!offer_promo){
                 response.status(404, `Промокод '${body.promo_id}' не найден`);
                 return response.send();
             }
         }
 
         //подмена промокода
-        body.promo_id = order_promo.name_id;
+        body.promo_id = offer_promo.name_id;
 
         //создание нового заказа
-        order_new = await ORDER.NEW(body);
+        offer_id = await OFFER.NEW(body);
         response.status(201, 'created');
     }
     catch(err){
@@ -150,27 +150,27 @@ app.post('/order', async (req, res) => {
 
     //тут считаем скидку и возвращаем объект оплаты
     try{
-        const order_sub = await SUB.FIND({name_id: body.sub_id}, true);
-        const payment = Math.ceil(order_sub.price * (1 - order_promo.discount/100));
+        const offer_sub = await SUB.FIND({name_id: body.sub_id}, true);
+        const payment = Math.ceil(offer_sub.price * (1 - offer_promo.discount/100));
 
         //информация для пользователя
-        const orderDetails = {
-            order_id: order_new.order_id,
-            subname: order_sub.title,
-            price: order_sub.price,
+        const offerDetails = {
+            offer_id,
+            subname: offer_sub.title,
+            price: offer_sub.price,
             toPay: payment,
-            discount: order_promo.discount,
-            promoName: order_promo.title
+            discount: offer_promo.discount,
+            promoName: offer_promo.title
         }
 
         //проверка автооформление бесплатной подписки
         if(config.auto_accept_free_trial && body.sub_id === 'free'){
             //метод имеет внутрюю обработку ошибок
-            return await confirOrder(orderDetails, response);
+            return await confirOffer(offerDetails, response);
         }
 
         //отправка ответа
-        response.body = orderDetails;
+        response.body = offerDetails;
 
         //отправка ответа
         response.send();
@@ -181,15 +181,15 @@ app.post('/order', async (req, res) => {
 });
 
 //получение всех заказов
-app.get('/order', async (req, res) => {
+app.get('/offer', async (req, res) => {
 
     const response = new Response(res);
     const searchData = req.body;
 
     //получение заказов по фильтрам
     try{
-        const orders = await ORDER.FIND(searchData);
-        response.body = orders;
+        const offers = await OFFER.FIND(searchData);
+        response.body = offers;
         response.send();
     }
     catch(err){
@@ -198,42 +198,42 @@ app.get('/order', async (req, res) => {
 });
 
 //одобрение заказа
-app.post('/resolveOrder', async (req, res) => {
+app.post('/resolveOffer', async (req, res) => {
     const response = new Response(res);
-    const order_id = req.body.order_id;
+    const offer_id = req.body.offer_id;
 
-    if(!order_id){
+    if(!offer_id){
         response.status(417, 'Не передан идентификатор заказа');
         return response.send();
     }
 
     try{
         //рассматриваемый заказ
-        const accepting = await ORDER.FIND({order_id}, true);
-        const order_sub = await SUB.FIND({name_id: accepting.sub_id}, true);
-        const order_promo = await PROMO.FIND({name_id: accepting.promo_id}, true);
-        const order_user = await USER.FIND({telegram_id: accepting.user_id}, true);
+        const accepting = await OFFER.FIND({offer_id}, true);
+        const offer_sub = await SUB.FIND({name_id: accepting.sub_id}, true);
+        const offer_promo = await PROMO.FIND({name_id: accepting.promo_id}, true);
+        const offer_user = await USER.FIND({telegram_id: accepting.user_id}, true);
 
         //скидки на оформление
-        const promoPrice = order_sub.price * (1 - order_promo.discount/100);
-        const invitPrice = promoPrice * (1 - config.invite_discount/100 * order_user.invite_count);
+        const promoPrice = offer_sub.price * (1 - offer_promo.discount/100);
+        const invitPrice = promoPrice * (1 - config.invite_discount/100 * offer_user.invite_count);
         const priceToPay = Math.ceil(invitPrice);
 
         //исключение отрицательной цены
         const payment = (priceToPay < 0) ? 0 : priceToPay;
 
         //информация для пользователя
-        const orderDetails = {
-            order_id,
-            subname: order_sub.title,
-            price: order_sub.price,
+        const offerDetails = {
+            offer_id,
+            subname: offer_sub.title,
+            price: offer_sub.price,
             toPay: payment,
-            discount: order_promo.discount,
-            promoName: order_promo.title
+            discount: offer_promo.discount,
+            promoName: offer_promo.title
         }
 
         //метод имеет внутренюю обработку ошибок
-        await confirOrder(orderDetails, response);
+        await confirOffer(offerDetails, response);
 
     }catch(err){
         return databaseErrorHandler(err, response).send();
@@ -283,11 +283,11 @@ app.get('/subscription', async (req, res) => {
     }
 });
 
-async function confirOrder(orderInfo, response){
+async function confirOffer(offerInfo, response){
 
     //проверка полей объекта подписки
     try{
-        checkSubInfoFields(orderInfo);
+        checkSubInfoFields(offerInfo);
 
     }catch(err){
         response.status(417, err.message);
@@ -297,31 +297,31 @@ async function confirOrder(orderInfo, response){
     //отметка одобрения заказа
     try{
         //поиск деталей заказа
-        const orderDetails = await ORDER.FIND({order_id: orderInfo.order_id}, true);
+        const offerDetails = await OFFER.FIND({offer_id: offerInfo.offer_id}, true);
 
         //если такой заявки нет
-        if(!orderDetails){
-            response.status(404, `Заявка с order_id: '${orderInfo.order_id}' не найдена`);
+        if(!offerDetails){
+            response.status(404, `Заявка с offer_id: '${offerInfo.offer_id}' не найдена`);
             return response.send();
         }
 
         //проверка на одобрение заказа ранее
-        if(orderDetails.resolved){
+        if(offerDetails.resolved){
             response.status(409, 'Заявка уже одобрена');
             return response.send();
         }
 
         //получение информации о подписке
-        const subForOrder = await SUB.FIND({name_id: orderDetails.sub_id}, true);
+        const subForOffer = await SUB.FIND({name_id: offerDetails.sub_id}, true);
 
         //уникальный имена для тарифа
-        const username = `${subForOrder.name_id}_${orderDetails.order_id}`;
+        const username = `${subForOffer.name_id}_${offerDetails.offer_id}`;
 
         //установка даты окончания подписки
-        const expire = new Time().addTime(subForOrder.date_limit * 86400000).toShortUnix();
+        const expire = new Time().addTime(subForOffer.date_limit * 86400000).toShortUnix();
 
         //лимит данных
-        const data_limit = subForOrder.data_limit * 1024**3;
+        const data_limit = subForOffer.data_limit * 1024**3;
 
         //тут генерируем строку подключения и передаем ее пользователю
         const userData = {
@@ -348,18 +348,18 @@ async function confirOrder(orderInfo, response){
         const requestData = await MarzbanAPI.CREATE_USER(userData);
 
         //установка текста подписки пользователя
-        await ORDER.SET_CONNECTION_STRING(orderDetails.order_id, requestData.links[0]);
-        await ORDER.RESOLVE(orderDetails.order_id);
+        await OFFER.SET_CONNECTION_STRING(offerDetails.offer_id, requestData.links[0]);
+        await OFFER.RESOLVE(offerDetails.offer_id);
 
         //если подписка бесплатная, убрать информацию о скидке и к оплате
-        if(orderDetails.sub_id === 'free'){
-            delete orderInfo.discount;
-            delete orderInfo.price;
+        if(offerDetails.sub_id === 'free'){
+            delete offerInfo.discount;
+            delete offerInfo.price;
         }
         //повышаем счетчик приглашенных пользователей
-        else if(orderDetails.promo_id === 'friend' && orderDetails.invite_code){
+        else if(offerDetails.promo_id === 'friend' && offerDetails.invite_code){
             //поиск пользователя с таким промокодом                   ИМЕЕТ УЖЕ НЕ ТОТ КОД TELEGRAM ИЗ-ЗА ПОДМЕНЫ
-            const invitePromoCodeOwner = await USER.FIND({invite_code: orderDetails.invite_code}, true);
+            const invitePromoCodeOwner = await USER.FIND({invite_code: offerDetails.invite_code}, true);
             console.log(1, invitePromoCodeOwner.telegram_id);
             await USER.INCREMENT_INVITE_COUNTER(invitePromoCodeOwner.telegram_id);
             console.log(2, invitePromoCodeOwner.telegram_id);
@@ -367,7 +367,7 @@ async function confirOrder(orderInfo, response){
         else {}
 
         // Ответ для сервера
-        const responseData = {...orderInfo, connection: requestData.links[0]};
+        const responseData = {...offerInfo, connection: requestData.links[0]};
 
         //отправка ответа
         response.status(201, 'created');

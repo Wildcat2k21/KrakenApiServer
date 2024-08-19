@@ -57,41 +57,41 @@ class USER {
 }
 
 //заказы
-class ORDER {
+class OFFER {
 
     static database = null;
 
     constructor(database) {
-        ORDER.database = database; // Инициализация статического свойства через конструктор
+        OFFER.database = database; // Инициализация статического свойства через конструктор
     }
 
     //поиск заказов
     static async FIND(params, limit){
-        return await ORDER.database.find('order', params, limit);
+        return await OFFER.database.find('offer', params, limit);
     }
 
     //удаление заказа
-    static async DELETE(order_id){
-        return await ORDER.database.delete('order', {order_id});
+    static async DELETE(offer_id){
+        return await OFFER.database.delete('offer', {offer_id});
     }
 
     //добавление заказа
     static async NEW(data){
         //установление даты заказа
         const created_date = new Time().fromUnix();
-        const orderWithDate = {...data, created_date};
+        const offerWithDate = {...data, created_date};
 
-        return await ORDER.database.insert('order', orderWithDate);
+        return await OFFER.database.insert('offer', offerWithDate);
     }
 
     //отметка одобрения заказа
-    static async RESOLVE(order_id){
-        return await ORDER.database.update('order', {resolved: 1}, {order_id});
+    static async RESOLVE(offer_id){
+        return await OFFER.database.update('offer', {resolved: 1}, {offer_id});
     }
 
     //установка текста подписки пользователя
     static async SET_CONNECTION_STRING(sub_id, conn_string){
-        return await ORDER.database.update('order', {conn_string}, {sub_id});
+        return await OFFER.database.update('offer', {conn_string}, {sub_id});
     }
 }
 
@@ -125,4 +125,4 @@ class PROMO {
     }
 }
 
-module.exports = {USER, ORDER, SUB, PROMO}
+module.exports = {USER, OFFER, SUB, PROMO}
