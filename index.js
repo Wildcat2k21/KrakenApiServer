@@ -269,12 +269,9 @@ app.get('/subscription', async (req, res) => {
 async function createOfferDetails(offer_id){
     //рассматриваемый заказ
     const accepting = await OFFER.FIND({offer_id}, true)
-    console.log(777, accepting);
     const offer_sub = await SUB.FIND({name_id: accepting.sub_id}, true);
     const offer_promo = await PROMO.FIND({name_id: accepting.promo_id}, true);
-    console.log(1, accepting);
     const offer_user = await USER.FIND({telegram_id: accepting.user_id}, true);
-    console.log(2, accepting);
 
     //скидки на оформление
     const promoPrice = offer_sub.price * (1 - offer_promo.discount/100);
@@ -369,7 +366,7 @@ async function confirOffer(offerInfo, response){
         const offerUserFreeTrial = await USER.FIND({telegram_id: offerDetails.user_id, free_trial_used: 0}, true);
 
         //если заказ был первый - отметить пользователя как использовавший бесплатную подписку
-        if(offerUserFreeTrial) await USER.UPDATE(telegram_id, {free_trial_used: 1});
+        if(offerUserFreeTrial) await USER.UPDATE(offerDetails.user_id, {free_trial_used: 1});
 
         //если подписка бесплатная, убрать информацию о скидке и к оплате
         if(offerDetails.sub_id === 'free'){
