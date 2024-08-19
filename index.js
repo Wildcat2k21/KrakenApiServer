@@ -95,7 +95,7 @@ app.post('/order', async (req, res) => {
     const body = req.body;
     
     //идентификатор заказа
-    let order_promo = undefined, order_id = undefined;
+    let order_promo = undefined, order_new = undefined;
 
     // Проверка на поля заказа
     try{
@@ -141,7 +141,7 @@ app.post('/order', async (req, res) => {
         body.promo_id = order_promo.name_id;
 
         //создание нового заказа
-        order_id = await ORDER.NEW(body);
+        order_new = await ORDER.NEW(body);
         response.status(201, 'created');
     }
     catch(err){
@@ -155,7 +155,7 @@ app.post('/order', async (req, res) => {
 
         //информация для пользователя
         const orderDetails = {
-            order_id,
+            order_id: order_new.order_id,
             subname: order_sub.title,
             price: order_sub.price,
             toPay: payment,
@@ -209,7 +209,7 @@ app.post('/resolveOrder', async (req, res) => {
 
     try{
         //рассматриваемый заказ
-        const accepting = await ORDER.FIND({id: order_id}, true);
+        const accepting = await ORDER.FIND({order_id}, true);
         const order_sub = await SUB.FIND({name_id: accepting.sub_id}, true);
         const order_promo = await PROMO.FIND({name_id: accepting.promo_id}, true);
         const order_user = await USER.FIND({telegram_id: accepting.user_id}, true);
