@@ -268,7 +268,8 @@ app.get('/subscription', async (req, res) => {
 //генерация ответа для заказа пользователя
 async function createOfferDetails(offer_id){
     //рассматриваемый заказ
-    const accepting = await OFFER.FIND({offer_id}, true);
+    const accepting = await OFFER.FIND({offer_id}, true)
+    console.log(777, accepting);
     const offer_sub = await SUB.FIND({name_id: accepting.sub_id}, true);
     const offer_promo = await PROMO.FIND({name_id: accepting.promo_id}, true);
     const offer_user = await USER.FIND({telegram_id: accepting.user_id}, true);
