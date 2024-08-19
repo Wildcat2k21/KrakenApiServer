@@ -297,7 +297,7 @@ async function confirOrder(orderInfo, response){
     //отметка одобрения заказа
     try{
         //поиск деталей заказа
-        const orderDetails = await ORDER.FIND({id: orderInfo.order_id}, true);
+        const orderDetails = await ORDER.FIND({order_id: orderInfo.order_id}, true);
 
         //если такой заявки нет
         if(!orderDetails){
@@ -315,7 +315,7 @@ async function confirOrder(orderInfo, response){
         const subForOrder = await SUB.FIND({name_id: orderDetails.sub_id}, true);
 
         //уникальный имена для тарифа
-        const username = `${subForOrder.name_id}_${orderDetails.id}`;
+        const username = `${subForOrder.name_id}_${orderDetails.order_id}`;
 
         //установка даты окончания подписки
         const expire = new Time().addTime(subForOrder.date_limit * 86400000).toShortUnix();
@@ -348,8 +348,8 @@ async function confirOrder(orderInfo, response){
         const requestData = await MarzbanAPI.CREATE_USER(userData);
 
         //установка текста подписки пользователя
-        await ORDER.SET_CONNECTION_STRING(orderDetails.id, requestData.links[0]);
-        await ORDER.RESOLVE(orderDetails.id);
+        await ORDER.SET_CONNECTION_STRING(orderDetails.order_id, requestData.links[0]);
+        await ORDER.RESOLVE(orderDetails.order_id);
 
         //если подписка бесплатная, убрать информацию о скидке и к оплате
         if(orderDetails.sub_id === 'free'){
