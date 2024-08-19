@@ -272,7 +272,9 @@ async function createOfferDetails(offer_id){
     console.log(777, accepting);
     const offer_sub = await SUB.FIND({name_id: accepting.sub_id}, true);
     const offer_promo = await PROMO.FIND({name_id: accepting.promo_id}, true);
+    console.log(1, accepting);
     const offer_user = await USER.FIND({telegram_id: accepting.user_id}, true);
+    console.log(2, accepting);
 
     //скидки на оформление
     const promoPrice = offer_sub.price * (1 - offer_promo.discount/100);
