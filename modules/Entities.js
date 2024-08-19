@@ -22,7 +22,9 @@ class USER {
 
     //увеличение счетчика приглашенных пользователей
     static async INCREMENT_INVITE_COUNTER(telegram_id){
-        return await USER.database.executeNoDataReturning(`UPDATE 'user' SET 'invite_count' = 'invite_count' + 1 WHERE 'telegram_id' = ${telegram_id}`);
+        const currentUser = await USER.database.find('user', {telegram_id}, true);
+        const invite_count = currentUser['invite_count'] + 1;
+        return await USER.database.executeNoDataReturning(`UPDATE 'user' SET 'invite_count' = ${invite_count} WHERE 'telegram_id' = ${telegram_id}`);
     }
 
     //отметка использования временной подписки
