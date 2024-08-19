@@ -16,20 +16,19 @@ class USER {
 
     //подсчет количества записей
     static async COUNT(){
-        const data = await USER.database.executeWithReturning('SELECT COUNT(*) FROM \'user\'');
+        const data = await USER.database.executeWithReturning('SELECT COUNT(*) FROM user');
         return data[0]['COUNT(*)'];
     }
 
     //увеличение счетчика приглашенных пользователей
     static async INCREMENT_INVITE_COUNTER(telegram_id){
-        const currentUser = await USER.database.find('user', {telegram_id}, true);
-        const invite_count = currentUser['invite_count'] + 1;
-        return await USER.database.executeNoDataReturning(`UPDATE 'user' SET 'invite_count' = ${invite_count} WHERE 'telegram_id' = ${telegram_id}`);
+        return await USER.database.executeNoDataReturning(`UPDATE user SET invite_count = invite_count + 1 WHERE telegram_id = ${telegram_id}`);
     }
 
     //отметка использования временной подписки
-    static async UPDATE(telegram_id, field, value){
-        return await USER.database.executeNoDataReturning(`UPDATE 'user' SET '${field}' = '${value}' WHERE 'telegram_id' = ${telegram_id}`);
+    static async UPDATE(telegram_id, update){
+        if(typeof value === 'string') value = `'${value}'`;
+        return await USER.database.update('user', update, {telegram_id});
     }
 
     //добавление пользователя
@@ -53,7 +52,7 @@ class USER {
 
     //удаление пользователя
     static async DELETE(telegram_id){
-        return await USER.database.executeNoDataReturning(`DELETE FROM 'user' WHERE 'telegram_id' = ${telegram_id}`);
+        return await USER.database.delete('user', {telegram_id});
     }
 }
 
@@ -73,7 +72,7 @@ class ORDER {
 
     //удаление заказа
     static async DELETE(order_id){
-        return await ORDER.database.executeNoDataReturning(`DELETE FROM 'order' WHERE 'order_id' = ${order_id}`);
+        return await ORDER.database.delete('order', {order_id});
     }
 
     //добавление заказа
@@ -87,12 +86,12 @@ class ORDER {
 
     //отметка одобрения заказа
     static async RESOLVE(order_id){
-        return await ORDER.database.executeNoDataReturning(`UPDATE 'order' SET 'resolved' = 1 WHERE 'order_id' = ${order_id}`);
+        return await ORDER.database.update('order', {resolved: 1}, {order_id});
     }
 
     //установка текста подписки пользователя
     static async SET_CONNECTION_STRING(sub_id, conn_string){
-        return await ORDER.database.executeNoDataReturning(`UPDATE 'order' SET 'conn_string' = '${conn_string}' WHERE 'id' = ${sub_id}`);
+        return await ORDER.database.update('order', {conn_string}, {sub_id});
     }
 }
 

@@ -31,7 +31,7 @@ CREATE TABLE user (
 
 -- Заказы
 CREATE TABLE `order` (
-    id INTEGER PRIMARY KEY,
+    order_id INTEGER PRIMARY KEY,
     user_id INTEGER NOT NULL,
     sub_id INTEGER NOT NULL,
     promo_id TEXT NOT NULL,

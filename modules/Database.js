@@ -19,12 +19,53 @@ class Database {
             });
 
             //формирование запроса
-            const sql = `INSERT INTO '${tableName}' (${fields.join(', ')}) VALUES (${values.join(', ')})`;
+            const sql = `INSERT INTO ${tableName} (${fields.join(', ')}) VALUES (${values.join(', ')})`;
 
             // Выполнение запроса
             this.executeNoDataReturning(sql, true).then(result => resolve(result)).catch(err => {
                 reject(err);
             });
+        });
+    }
+
+    //обновление данных в таблице
+    async update(tableName, update, condition){
+        return new Promise((resolve, reject) => {
+
+            //значения для обновлений
+            const update_params = Object.keys(update).map(field => {
+                const convertedValue = typeof update[field] === 'number' ? update[field] : `'${update[field]}'`;
+                return `${field} = ${convertedValue}`;
+            });
+
+            //значения условия
+            const condition_params = Object.keys(condition).map(field => {
+                const convertedValue = typeof condition[field] === 'number' ? condition[field] : `'${condition[field]}'`;
+                return `${field} = ${convertedValue}`;
+            });
+
+            //формирование запроса
+            const sql = `UPDATE ${tableName} SET ${update_params.join(', ')} WHERE ${condition_params.join(' AND ')}`;
+
+            // Выполнение запроса
+            this.executeNoDataReturning(sql).then(result => resolve(result)).catch(err => reject(err));
+        });
+    }
+
+    //удаление записей из таблицы
+    async delete(tableName, condition){
+        return new Promise((resolve, reject) => {
+            //значения условия
+            const condition_params = Object.keys(condition).map(field => {
+                const convertedValue = typeof condition[field] === 'number' ? condition[field] : `'${condition[field]}'`;
+                return `${field} = ${convertedValue}`;
+            });
+            
+            //формирование запроса
+            const sql = `DELETE FROM ${tableName} WHERE ${condition_params.join(' AND ')}`;
+
+            // Выполнение запроса
+            this.executeNoDataReturning(sql).then(result => resolve(result)).catch(err => reject(err));
         });
     }
 
@@ -63,6 +104,7 @@ class Database {
     //запрос без возвращаемого значения
     async executeNoDataReturning(sql, returnId = false) {
         return new Promise((resolve, reject) => {
+            console.log(sql);
             this.db.run(sql, function(err) {
                 if (err) return reject(new Error(`Не удалось выполнить запрос: ${err.message}`));
                 resolve((returnId) ? this.lastID : undefined);
