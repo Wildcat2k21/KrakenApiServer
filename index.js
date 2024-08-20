@@ -49,6 +49,7 @@ app.post('/user', async (req, res) => {
     catch(err){
         return databaseErrorHandler(err, response).send();
     }
+    
     // Проверка на поля пользователя
     try{
         checkUserFields(body);
@@ -58,6 +59,7 @@ app.post('/user', async (req, res) => {
         response.status(417, err.message);
         return response.send();
     }
+
     // Выполнение опреации вставки
     try{
         await USER.NEW(body);
@@ -94,21 +96,19 @@ app.post('/offer', async (req, res) => {
         //поиск такой подписки
         offer_sub = await SUB.FIND({name_id: body.sub_id}, true);
 
+        //поиск отметки на первый заказ
+        offer_user = await USER.FIND({telegram_id: body.user_id}, true);
+
         if(!offer_sub){
             response.status(404, 'Подписка не найдена');
             return response.send();
         }
 
         //проверка бесплатной подписки на первый заказ
-        if(body.sub_id === 'free'){
-            //поиск отметки на первый заказ
-            offer_user = await USER.FIND({telegram_id: body.user_id}, true);
-
+        if(body.sub_id === 'free' && offer_user.free_trial_used){
             //отказ пользователю в бесплатной подписке если заказ не первый
-            if(offer_user.free_trial_used){
-                response.status(403, 'Пробная подписка доступна только на первый заказ');
-                return response.send();
-            }
+            response.status(403, 'Пробная подписка доступна только на первый заказ');
+            return response.send();
         }
 
         //если промокод не передан - применяется промокод по умолчанию
@@ -410,7 +410,6 @@ function calcPriceAndDiscount(subPrice, invteCount, promoDiscount){
 
     //скидка
     const discount = (subPrice) ? Math.ceil((subPrice - payment) / subPrice * 100) : 0;
-
     return {payment, discount};
 }
 
@@ -493,7 +492,6 @@ async function confirmOffer(offerInfo, response){
         //отправка ответа
         response.status(201, 'created');
         response.body = responseData;
-
         return response.send();
     }
     catch(err){
@@ -516,7 +514,6 @@ async function confirmOffer(offerInfo, response){
             const resMessage = err.message || 'Сервер Marzban не отвечает';
             if(err.message) console.error(err);
             response.status(500, resMessage);
-
             return response.send();
         }
     }
