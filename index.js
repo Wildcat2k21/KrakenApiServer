@@ -458,7 +458,7 @@ async function confirmOffer(offerInfo, response){
         });
 
         //если подписка бесплатная, убрать информацию о скидке и к оплате
-        console.log('test 1');
+        console.log('test 1', 1, offerInfo, 2, offerInfo._offer);
         if(offerInfo._offer.sub_id === 'free'){
             delete offerInfo.discount;
             delete offerInfo.price;
