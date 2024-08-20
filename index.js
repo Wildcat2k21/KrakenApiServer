@@ -92,7 +92,7 @@ app.post('/offer', async (req, res) => {
     try{
 
         //поиск такой подписки
-        offer_sub = await SUB.FIND({sub_id: body.sub_id}, true);
+        offer_sub = await SUB.FIND({name_id: body.sub_id}, true);
 
         if(!offer_sub){
             response.status(404, 'Подписка не найдена');
