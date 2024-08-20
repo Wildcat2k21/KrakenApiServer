@@ -485,11 +485,14 @@ async function confirmOffer(offerInfo, response){
         else if(err.message && err.message.indexOf('SQLITE') !== -1){
             return databaseErrorHandler(err, response).send();
 
-        } else {
+        }
+        //остальные ошибки
+        else {
             // Запрос был сделан, но ответа от сервера не было
             const resMessage = err.message || 'Сервер Marzban не отвечает';
+            if(err.message) console.error(err);
             response.status(500, resMessage);
-            console.error(resMessage);
+
             return response.send();
         }
     }
