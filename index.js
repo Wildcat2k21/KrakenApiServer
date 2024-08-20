@@ -376,7 +376,7 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited){
     const payment = (priceToPay < 0) ? 0 : priceToPay;
 
     //скидка
-    const discount = Math.ceil(payment*100/sub.price);
+    const discount = Math.ceil((1-payment/sub.price)*100);
 
     //информация для пользователя
     const offerDetails = {
