@@ -458,10 +458,12 @@ async function confirmOffer(offerInfo, response){
         });
 
         //если подписка бесплатная, убрать информацию о скидке и к оплате
+        console.log('test 1');
         if(offerInfo._offer.sub_id === 'free'){
             delete offerInfo.discount;
             delete offerInfo.price;
         }
+        console.log('test 2');
 
         // Ответ для сервера
         const responseData = {...offerInfo, connection: requestData.links[0]};
