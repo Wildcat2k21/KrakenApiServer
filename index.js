@@ -143,8 +143,6 @@ app.post('/offer', async (req, res) => {
         //создание нового заказа
         paymentCalc = calcPriceAndDiscount(offer_sub.price, offer_user.invite_count, offer_promo.discount);
 
-        console.log(paymentCalc);
-
         //создание нового заказа
         offer_id = await OFFER.NEW({...body, ...paymentCalc});
         response.status(201, 'created');
@@ -401,8 +399,6 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited, paymentC
 }
 
 function calcPriceAndDiscount(subPrice, invteCount, promoDiscount){
-
-    console.log(subPrice, invteCount, promoDiscount);
         
     //скидки на оформление
     const promoPrice = subPrice * (1 - promoDiscount/100);
