@@ -452,21 +452,19 @@ async function confirmOffer(offerInfo, response){
         //обновление пользователя
         if(userUpdateOptions) await USER.UPDATE(offerInfo._offer.user_id, userUpdateOptions);
 
-        //удаление скрытых полей
-        Object.keys(offerInfo).forEach(key => {
-            if(key.startsWith('_')) delete offerInfo[key];
-        });
+        // Ответ для сервера
+        const responseData = {...offerInfo, connection: requestData.links[0]};
 
         //если подписка бесплатная, убрать информацию о скидке и к оплате
-        console.log('test 1', 1, offerInfo, 2, offerInfo._offer);
         if(offerInfo._offer.sub_id === 'free'){
             delete offerInfo.discount;
             delete offerInfo.price;
         }
-        console.log('test 2');
 
-        // Ответ для сервера
-        const responseData = {...offerInfo, connection: requestData.links[0]};
+        //удаление скрытых полей
+        Object.keys(offerInfo).forEach(key => {
+            if(key.startsWith('_')) delete offerInfo[key];
+        });
 
         //отправка ответа
         response.status(201, 'created');
