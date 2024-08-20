@@ -402,6 +402,8 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited, paymentC
 
 function calcPriceAndDiscount(subPrice, invteCount, promoDiscount){
 
+    console.log(subPrice, invteCount, promoDiscount);
+        
     //скидки на оформление
     const promoPrice = subPrice * (1 - promoDiscount/100);
     const invitPrice = promoPrice * (1 - config.invite_discount/100 * invteCount);
