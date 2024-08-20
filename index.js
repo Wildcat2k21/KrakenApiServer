@@ -440,7 +440,7 @@ async function confirmOffer(offerInfo, response){
         //обновление зависимостей для платного заказа
         if(offerInfo._offer.sub_id !== 'free') {
             //сброс счетчика приглашенных для пользователя при новым заказе
-            if(!offerInfo._user.invite_count){
+            if(offerInfo._user.invite_count){
                 userUpdateOptions = {...userUpdateOptions, invite_count: 0};
             }
 
