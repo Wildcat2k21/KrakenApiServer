@@ -31,36 +31,6 @@ function checkUserFields(data){
     checkMiddleFunction(requedFields, data);
 }
 
-function checkSubInfoFields(data){
-    const requedFields = {
-        'offer_id': {
-            name: 'Идентификатор заказа',
-            type: 'number'
-        },
-        'subname': {
-            name: 'Название подписки'
-        },
-        'price': {
-            name: 'Цена подписки',
-            type: 'number'
-        },
-        'promoName': {
-            name: 'Название промокода'
-        },
-        'discount': {
-            name: 'Скидка',
-            type: 'number'
-        },
-        'toPay': {
-            name: 'К оплате',
-            type: 'number'
-        }
-    }
-
-    // Проверяем типы полей
-    checkMiddleFunction(requedFields, data);
-}
-
 function checkOfferFields(data){
     const requedFields = {
         'user_id': {
@@ -136,4 +106,4 @@ function checkMiddleFunction(requedFields, data){
     }
 }
 
-module.exports = {checkUserFields, checkOfferFields, checkConfigFields, checkSubInfoFields};
+module.exports = {checkUserFields, checkOfferFields, checkConfigFields};

@@ -37,12 +37,11 @@ CREATE TABLE offer (
     promo_id TEXT NOT NULL,
     invite_code TEXT DEFAULT NULL,
     payment INTEGER NOT NULL,
-    resolved INTEGER DEFAULT 0,
     conn_string TEXT DEFAULT NULL,
     created_date TEXT NOT NULL CHECK(LENGTH(created_date) = 10),
-    FOREIGN KEY (user_id) REFERENCES user(telegram_id),
-    FOREIGN KEY (sub_id) REFERENCES sub(name_id),
-    FOREIGN KEY (promo_id) REFERENCES promo(name_id)
+    FOREIGN KEY (user_id) REFERENCES user(telegram_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (sub_id) REFERENCES sub(name_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (promo_id) REFERENCES promo(name_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 --- подписки ---

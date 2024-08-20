@@ -25,7 +25,7 @@ class USER {
         return await USER.database.executeNoDataReturning(`UPDATE user SET invite_count = invite_count + 1 WHERE telegram_id = ${telegram_id}`);
     }
 
-    //отметка использования временной подписки
+    //обновление пользователя
     static async UPDATE(telegram_id, update){
         return await USER.database.update('user', update, {telegram_id});
     }
@@ -48,11 +48,6 @@ class USER {
         //выполнение запроса
         return await USER.database.insert('user', dataWithDate);
     }
-
-    //удаление пользователя
-    static async DELETE(telegram_id){
-        return await USER.database.delete('user', {telegram_id});
-    }
 }
 
 //заказы
@@ -69,11 +64,6 @@ class OFFER {
         return await OFFER.database.find('offer', params, limit);
     }
 
-    //удаление заказа
-    static async DELETE(offer_id){
-        return await OFFER.database.delete('offer', {offer_id});
-    }
-
     //добавление заказа
     static async NEW(data){
         //установление даты заказа
@@ -83,14 +73,9 @@ class OFFER {
         return await OFFER.database.insert('offer', offerWithDate);
     }
 
-    //отметка одобрения заказа
-    static async RESOLVE(offer_id){
-        return await OFFER.database.update('offer', {resolved: 1}, {offer_id});
-    }
-
-    //установка текста подписки пользователя
-    static async SET_CONNECTION_STRING(sub_id, conn_string){
-        return await OFFER.database.update('offer', {conn_string}, {sub_id});
+        //обновление пользователя
+    static async UPDATE(offer_id, update){
+        return await OFFER.database.update('offer', update, {offer_id});
     }
 }
 
