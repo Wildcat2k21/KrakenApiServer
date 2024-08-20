@@ -382,6 +382,7 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited){
         toPay: payment,
         discount: promo.discount,
         promoName: promo.title,
+        inviteCount: user.invite_count,
         _offer: offerOrId,
         _sub: sub,
         _user: user,
@@ -456,6 +457,7 @@ async function confirmOffer(offerInfo, response){
         if(offerInfo._offer.sub_id === 'free'){
             delete offerInfo.discount;
             delete offerInfo.price;
+            delete offerInfo.inviteCount;
         }
 
         //удаление скрытых полей
