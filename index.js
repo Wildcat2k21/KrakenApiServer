@@ -371,6 +371,7 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited){
     const promoPrice = sub.price * (1 - promo.discount/100);
     const invitPrice = promoPrice * (1 - config.invite_discount/100 * user.invite_count);
     const priceToPay = Math.ceil(invitPrice);
+    const discount = Math.ceil(priceToPay*100/sub.price);
 
     //исключение отрицательной цены
     const payment = (priceToPay < 0) ? 0 : priceToPay;
@@ -380,7 +381,7 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited){
         subname: sub.title,
         price: sub.price,
         toPay: payment,
-        discount: promo.discount,
+        discount,
         promoName: promo.title,
         inviteCount: user.invite_count,
         _offer: offerOrId,
