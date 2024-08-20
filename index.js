@@ -413,7 +413,7 @@ function calcPriceAndDiscount(subPrice, invteCount, promoDiscount){
     const payment = (priceToPay < 0) ? 0 : priceToPay;
 
     //скидка
-    const discount = Math.ceil((1 - payment / subPrice) * 100);
+    const discount = (subPrice) ? Math.ceil((subPrice - payment) / subPrice * 100) : 0;
 
     return {payment, discount};
 }
