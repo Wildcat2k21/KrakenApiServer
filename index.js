@@ -143,6 +143,8 @@ app.post('/offer', async (req, res) => {
         //создание нового заказа
         paymentCalc = calcPriceAndDiscount(offer_sub.price, offer_user.invite_count, offer_promo.discount);
 
+        console.log(paymentCalc);
+
         //создание нового заказа
         offer_id = await OFFER.NEW({...body, ...paymentCalc});
         response.status(201, 'created');
