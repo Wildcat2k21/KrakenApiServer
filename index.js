@@ -437,19 +437,16 @@ async function confirmOffer(offerInfo, response){
         //если заказ был первый - отметить пользователя как использовавший бесплатную подписку
         if(!offerInfo._user.free_trial_used) userUpdateOptions = {free_trial_used: 1};
 
+        //сброс счетчика приглашенных для пользователя при новым заказе
+        if(offerInfo._user.invite_count){
+            userUpdateOptions = {...userUpdateOptions, invite_count: 0};
+        }
+        
         //обновление зависимостей для платного заказа
-        if(offerInfo._offer.sub_id !== 'free') {
-            //сброс счетчика приглашенных для пользователя при новым заказе
-            if(offerInfo._user.invite_count){
-                userUpdateOptions = {...userUpdateOptions, invite_count: 0};
-            }
-
-            //повышаем счетчик приглашенных пользователей
-            if(offerInfo._offer.promo_id === 'friend' && offerInfo._offer.invite_code){
-                //поиск пользователя с таким промокодом
-                const invitePromoCodeOwner = offerInfo._invitedBy || await USER.FIND({invite_code: offerInfo._offer.invite_code}, true);
-                await USER.INCREMENT_INVITE_COUNTER(invitePromoCodeOwner.telegram_id);
-            }
+        if(offerInfo._offer.sub_id !== 'free' && offerInfo._offer.promo_id === 'friend' && offerInfo._offer.invite_code) {
+            //поиск пользователя с таким промокодом
+            const invitePromoCodeOwner = offerInfo._invitedBy || await USER.FIND({invite_code: offerInfo._offer.invite_code}, true);
+            await USER.INCREMENT_INVITE_COUNTER(invitePromoCodeOwner.telegram_id);
         }
 
         //обновление пользователя
