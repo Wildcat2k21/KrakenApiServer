@@ -39,10 +39,6 @@ function checkOfferFields(data){
         },
         'sub_id': {
             name: 'Идентификатор подписки'
-        },
-        'payment': {
-            name: 'Оплата',
-            type: 'number'
         }
     }
 

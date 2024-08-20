@@ -77,7 +77,7 @@ app.post('/offer', async (req, res) => {
     const body = req.body;
     
     //идентификатор заказа
-    let offer_promo, offer_user, offer_id, invited_by;
+    let offer_promo, offer_user, offer_id, offer_sub, invited_by, paymentCalc;
 
     // Проверка на поля заказа
     try{
@@ -90,6 +90,14 @@ app.post('/offer', async (req, res) => {
 
     // Добавление нового заказа
     try{
+
+        //поиск такой подписки
+        offer_sub = await SUB.FIND({sub_id: body.sub_id}, true);
+
+        if(!offer_sub){
+            response.status(404, 'Подписка не найдена');
+            return response.send();
+        }
 
         //проверка бесплатной подписки на первый заказ
         if(body.sub_id === 'free'){
@@ -133,7 +141,10 @@ app.post('/offer', async (req, res) => {
         body.promo_id = offer_promo.name_id;
 
         //создание нового заказа
-        offer_id = await OFFER.NEW(body);
+        paymentCalc = calcPriceAndDiscount(offer_sub.price, offer_user.invite_count, offer_promo.discount);
+
+        //создание нового заказа
+        offer_id = await OFFER.NEW({body, ...paymentCalc});
         response.status(201, 'created');
     }
     catch(err){
@@ -143,7 +154,7 @@ app.post('/offer', async (req, res) => {
     //обрабатываем тип подписки
     try{
         //создание деталей подписки
-        const offerDetails = await createOfferDetails(offer_id, null, offer_promo, offer_user, invited_by);
+        const offerDetails = await createOfferDetails(offer_id, offer_sub, offer_promo, offer_user, invited_by, paymentCalc);
 
         //проверка автооформление бесплатной подписки
         if(config.auto_accept_free_trial && body.sub_id === 'free'){
@@ -347,7 +358,7 @@ app.delete('/delete', async (req, res) => {
 });
 
 //генерация ответа для заказа пользователя
-async function createOfferDetails(offerOrId, sub, promo, user, invited){
+async function createOfferDetails(offerOrId, sub, promo, user, invited, paymentCalc){
 
     //проверка поля offer
     if(typeof offerOrId === 'number'){
@@ -367,16 +378,8 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited){
         user = await USER.FIND({telegram_id: offerOrId.user_id}, true);
     }
 
-    //скидки на оформление
-    const promoPrice = sub.price * (1 - promo.discount/100);
-    const invitPrice = promoPrice * (1 - config.invite_discount/100 * user.invite_count);
-    const priceToPay = Math.ceil(invitPrice);
-
-    //исключение отрицательной цены
-    const payment = (priceToPay < 0) ? 0 : priceToPay;
-
-    //скидка
-    const discount = Math.ceil((1-payment/sub.price)*100);
+    //расчет цены и скидки
+    const {payment, discount} = paymentCalc || calcPriceAndDiscount(sub.price, user.invite_count, promo.discount);
 
     //информация для пользователя
     const offerDetails = {
@@ -393,6 +396,22 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited){
     }
     
     return offerDetails;
+}
+
+function calcPriceAndDiscount(subPrice, invteCount, promoDiscount){
+
+    //скидки на оформление
+    const promoPrice = subPrice * (1 - promoDiscount/100);
+    const invitPrice = promoPrice * (1 - config.invite_discount/100 * invteCount);
+    const priceToPay = Math.ceil(invitPrice);
+
+    //исключение отрицательной цены
+    const payment = (priceToPay < 0) ? 0 : priceToPay;
+
+    //скидка
+    const discount = Math.ceil((1 - payment / subPrice) * 100);
+
+    return {payment, discount};
 }
 
 async function confirmOffer(offerInfo, response){

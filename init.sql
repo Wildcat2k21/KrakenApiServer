@@ -37,6 +37,7 @@ CREATE TABLE offer (
     promo_id TEXT NOT NULL,
     invite_code TEXT DEFAULT NULL,
     payment INTEGER NOT NULL,
+    discount INTEGER DEFAULT 0 CHECK(discount <= 100),
     conn_string TEXT DEFAULT NULL,
     created_date TEXT NOT NULL CHECK(LENGTH(created_date) = 10),
     FOREIGN KEY (user_id) REFERENCES user(telegram_id) ON DELETE CASCADE ON UPDATE CASCADE,
