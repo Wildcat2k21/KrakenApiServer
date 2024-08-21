@@ -374,7 +374,7 @@ app.patch('/recreate', async (req, res) => {
         for(let i = 0; i < users.length; i++){
             const allSelectedUsersSql = `SELECT * FROM offer WHERE user_id = ${users[i]} AND end_time > ${dateTimeNow} ORDER BY offer_id DESC LIMIT 1`;
             const offerForUser = await db.executeWithReturning(allSelectedUsersSql);
-            usersOffers.push(offerForUser);
+            if(offerForUser.length) usersOffers.push(offerForUser[0]);
         }
 
         //информировать об отсутстви действительных заявок для пользователей
@@ -416,7 +416,9 @@ app.patch('/recreate', async (req, res) => {
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
-            const errorMessage = err.response.data || err.message || err.response.detail;
+            const errorMessage = err.response.detail || err.response.data || err.message;
+
+            console.log(777, err.response.data);
 
             // Ошибка при обращении к серверу
             const error = new Error(`Marzban response ${statusCode}: ${errorMessage}`);
