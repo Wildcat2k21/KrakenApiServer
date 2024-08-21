@@ -395,17 +395,14 @@ app.patch('/recreate', async (req, res) => {
             //название заявки: 'тариф_идентификатор'
             const offerName = `${usersOffers[i].sub_id}_${usersOffers[i].offer_id}`;
 
-            //удаление действительной заявки
-            const deleteData = await MarzbanAPI.DELETE_USER(offerName);
+            //ВРЕМЕННО
+            console.log(offerName);
 
-            //detail содержит ошибку Marzban
-            if(deleteData.detail) throw new Error(deleteData.detail);
+            //удаление действительной заявки
+            await MarzbanAPI.DELETE_USER(offerName);
 
             //создание новвой заявки с тем же именем
             const requestData = await MarzbanAPI.CREATE_USER(offerName);
-
-            //detail содержит ошибку Marzban
-            if(requestData.detail) throw new Error(requestData.detail);
 
             //обновление строки подключения в заказе
             await OFFER.UPDATE(usersOffers[i].offer_id, {conn_string:  requestData.links[0]});
@@ -419,7 +416,7 @@ app.patch('/recreate', async (req, res) => {
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
-            const errorMessage = err.response.data || err.message;
+            const errorMessage = err.response.data || err.message || err.response.detail;
 
             // Ошибка при обращении к серверу
             const error = new Error(`Marzban response ${statusCode}: ${errorMessage}`);
@@ -579,18 +576,12 @@ async function confirmOffer(offerInfo, response){
             //удаляем заказ в систиме Marzban
             if(oldOfferInfo && oldOfferInfo.end_time < dateTimeNow){
                 const oldOfferName = `${oldOffer.sub_id}_${oldOffer.offer_id}`;
-                const deleteData = await MarzbanAPI.DELETE_USER(oldOfferName);
-                
-                //detail содержит ошибку Marzban
-                if(deleteData.detail) throw new Error(deleteData.detail);
+                await MarzbanAPI.DELETE_USER(oldOfferName);
             }
         }
 
         // Создаем нового пользователя
         const requestData = await MarzbanAPI.CREATE_USER(userData);
-
-        //detail содержит ошибку Marzban
-        if(requestData.detail) throw new Error(requestData.detail);
 
         //установка текста подписки пользователя и отметка что был заказ
         await OFFER.UPDATE(offerInfo._offer.offer_id, {conn_string: requestData.links[0]});
@@ -640,7 +631,7 @@ async function confirmOffer(offerInfo, response){
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
-            const errorMessage = err.response.data || err.message;
+            const errorMessage = err.response.data || err.message || err.response.detail;
 
             // Ошибка при обращении к серверу
             const error = new Error(`Marzban response ${statusCode}: ${errorMessage}`);
