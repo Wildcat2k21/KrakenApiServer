@@ -602,12 +602,12 @@ async function confirmOffer(offerInfo, response){
         if(oldOffer > 0){
 
             //ищем не истекший предыдущей заказ
-            const oldOfferInfo = await OFFER.FIND({offer_id: oldOffer}, true);
+            const oldOfferInf = await OFFER.FIND({offer_id: oldOffer}, true);
             const dateTimeNow = new Time().toShortUnix();
             
             //удаляем заказ в систиме Marzban
-            if(oldOfferInfo && oldOfferInfo.end_time > dateTimeNow){
-                const oldOfferName = `${oldOfferInfo.sub_id}_${oldOfferInfo.offer_id}`;
+            if(oldOfferInf && oldOfferInf.end_time > dateTimeNow){
+                const oldOfferName = `${oldOfferInf.sub_id}_${oldOfferInf.offer_id}`;
                 await MarzbanAPI.DELETE_USER(oldOfferName);
             }
         }
