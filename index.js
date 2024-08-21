@@ -239,7 +239,7 @@ app.post('/configure', (req, res) => {
     fs.writeFile('./config.json', JSON.stringify(req.body, null, 2), (err) => {
         if (err) {
             WriteInLogFile(err);
-            response.status(500, 'Не удалось изменить конфигурацию API server');
+            response.status(500, err.message);
         };
     });
 
@@ -264,8 +264,8 @@ app.get('/logs', async (req, res) => {
         response.body = await fs.readFileSync('logs.txt', 'utf8');
     }
     catch(err){
-        response.status(500, 'Не удалось прочитать логи');
         WriteInLogFile(err);
+        response.status(500, err.message);
     }
 
     response.send();
@@ -699,11 +699,11 @@ function databaseErrorHandler(err, response){
 
     // Обработка ограничений
     if(err.message.indexOf('SQLITE_CONSTRAINT') !== -1){
-        response.status(409, `Нарушено ограничение целостности данных / ${err.message}`);
+        response.status(409, err.message);
     }
     // Обработка ошибок синтаксиса
     else if (err.message.indexOf('SQLITE_ERROR') !== -1){
-        response.status(417, `Ошибка синтаксиса / ${err.message}`);
+        response.status(417, err.message);
     }
     // Обработка критических ошибок
     else {
