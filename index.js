@@ -381,7 +381,6 @@ app.patch('/recreate', async (req, res) => {
             if(offerForUser.length){
                 const offerSub = await SUB.FIND({name_id: offerForUser[0].sub_id}, true);
                 offerForUser[0].data_limit = offerSub.data_limit;
-                offerForUser[0].date_limit = offerSub.date_limit;
                 usersOffers.push(offerForUser[0]);
             }
         }
@@ -403,7 +402,7 @@ app.patch('/recreate', async (req, res) => {
 
             //название заявки: 'тариф_идентификатор'
             const username = `${usersOffers[i].sub_id}_${usersOffers[i].offer_id}`;
-            const expire = usersOffers[i].date_limit;
+            const expire = usersOffers[i].end_time;
             const data_limit = usersOffers[i].data_limit;
 
             //удаление действительной заявки
