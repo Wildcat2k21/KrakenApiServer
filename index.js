@@ -380,8 +380,8 @@ app.patch('/recreate', async (req, res) => {
             //получение информации о заказе
             if(offerForUser.length){
                 const offerSub = await SUB.FIND({name_id: offerForUser[0].sub_id}, true);
-                offerForUser[0].data_limit = offerSub[0].data_limit;
-                offerForUser[0].date_limit = offerSub[0].date_limit;
+                offerForUser[0].data_limit = offerSub.data_limit;
+                offerForUser[0].date_limit = offerSub.date_limit;
                 usersOffers.push(offerForUser[0]);
             }
         }
