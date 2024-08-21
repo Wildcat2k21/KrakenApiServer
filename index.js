@@ -441,7 +441,6 @@ app.patch('/recreate', async (req, res) => {
         response.send();
         
     }catch(err){
-
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
@@ -456,6 +455,11 @@ app.patch('/recreate', async (req, res) => {
             response.status(statusCode, errorMessage);
             return response.send();
         } 
+        //обработка ошибок базы данных
+        else if(err.message && err.message.indexOf('SQLITE') !== -1){
+            return databaseErrorHandler(err, response).send();
+
+        }
         //остальные ошибки
         else {
             // Запрос был сделан, но ответа от сервера не было
