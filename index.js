@@ -376,7 +376,14 @@ app.patch('/recreate', async (req, res) => {
         for(let i = 0; i < users.length; i++){
             const allSelectedUsersSql = `SELECT * FROM offer WHERE user_id = ${users[i]} AND end_time > ${dateTimeNow} ORDER BY offer_id DESC LIMIT 1`;
             const offerForUser = await db.executeWithReturning(allSelectedUsersSql);
-            if(offerForUser.length) usersOffers.push(offerForUser[0]);
+            
+            //получение информации о заказе
+            if(offerForUser.length){
+                const offerSub = await SUB.FIND({name_id: offerForUser[0].sub_id}, true);
+                offerForUser[0].data_limit = offerSub[0].data_limit;
+                offerForUser[0].date_limit = offerSub[0].date_limit;
+                usersOffers.push(offerForUser[0]);
+            }
         }
 
         //информировать об отсутстви действительных заявок для пользователей
@@ -396,6 +403,8 @@ app.patch('/recreate', async (req, res) => {
 
             //название заявки: 'тариф_идентификатор'
             const username = `${usersOffers[i].sub_id}_${usersOffers[i].offer_id}`;
+            const expire = usersOffers[i].date_limit;
+            const data_limit = usersOffers[i].data_limit;
 
             //удаление действительной заявки
             await MarzbanAPI.DELETE_USER(username);
