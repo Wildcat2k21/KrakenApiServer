@@ -46,6 +46,35 @@ password
         return response.data.access_token;
     }
 
+    static async GET_USER(user_id) {
+        const token = await MarzbanAPI.GET_AUTH_TOKEN();
+        const response = axios.get(`http://5.35.84.41:8000/api/user/${user_id}/`, {
+            "credentials": "include",
+            "headers": {
+                "Accept": "*/*",
+                'Authorization': `Bearer ${token}`,
+                "Priority": "u=0",
+                "Pragma": "no-cache",
+                "Cache-Control": "no-cache"
+            }
+        });
+
+        return response.data;
+    }
+
+    static async DELETE_USER(user_id){
+        const token = await MarzbanAPI.GET_AUTH_TOKEN();
+        const response = await axios.delete(`${MARZBAN_URL}/api/user/${user_id}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': '*/*',
+                'Priority': 'u=0'
+            }
+        });
+
+        return response.data;
+    }
+
     // Метод для создания нового пользователя
     static async CREATE_USER(userData) {
         const token = await MarzbanAPI.GET_AUTH_TOKEN();
@@ -55,6 +84,7 @@ password
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'Priority': 'u=0',
+                "Accept-Language": "ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3",
                 'Pragma': 'no-cache',
                 'Cache-Control': 'no-cache'
             }

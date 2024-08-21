@@ -2,7 +2,7 @@ const {USER, OFFER, SUB, PROMO} = require('./modules/Entities.js');
 const MarzbanAPI = require('./modules/MarzbanAPI.js');
 const Response = require('./modules/Response.js');
 const Database = require('./modules/Database.js');
-const {Time} = require('./modules/Other.js');
+const {Time, WriteInLogFile} = require('./modules/Other.js');
 const express = require('express');
 const { checkUserFields, checkOfferFields, checkConfigFields
 } = require('./modules/Data.js');
@@ -49,7 +49,7 @@ app.post('/user', async (req, res) => {
     catch(err){
         return databaseErrorHandler(err, response).send();
     }
-    
+
     // Проверка на поля пользователя
     try{
         checkUserFields(body);
@@ -64,7 +64,6 @@ app.post('/user', async (req, res) => {
     try{
         await USER.NEW(body);
         response.status(201, 'created')
-
         return response.send();
     }
     catch(err){
@@ -139,6 +138,9 @@ app.post('/offer', async (req, res) => {
 
         //подмена промокода
         body.promo_id = offer_promo.name_id;
+
+        //время окончания подписки
+        body.end_time = new Time().addTime(offer_sub.date_limit).toShortUnix();
 
         //создание нового заказа
         paymentCalc = calcPriceAndDiscount(offer_sub.price, offer_user.invite_count, offer_promo.discount);
@@ -234,13 +236,36 @@ app.post('/configure', (req, res) => {
     // Изменение файла конфигурации
     fs.writeFile('./config.json', JSON.stringify(req.body, null, 2), (err) => {
         if (err) {
-            console.error(err);
+            WriteInLogFile(err);
             response.status(500, 'Не удалось изменить конфигурацию API server');
         };
     });
 
     // Изменение конфигурации сервера
     response.body = config = req.body;
+    response.send();
+});
+
+//получение конфигурации
+app.get('/config', (req, res) => {
+    const response = new Response(res);
+    response.body = config;
+    response.send();
+});
+
+//получение логов
+app.get('/logs', async (req, res) => {
+    const response = new Response(res);
+
+    //reading logs and send
+    try{
+        response.body = await fs.readFileSync('logs.txt', 'utf8');
+    }
+    catch(err){
+        response.status(500, 'Не удалось прочитать логи');
+        WriteInLogFile(err);
+    }
+
     response.send();
 });
 
@@ -327,6 +352,100 @@ app.patch('/update', async (req, res) => {
         return databaseErrorHandler(err, response).send();
     }
 })
+
+//пересоздание заявок (в случае сбоя или по иным причинам)
+app.patch('/recreate', async (req, res) => {
+
+    const response = new Response(res);
+    const users = req.body.users;
+
+    //проверка входных данных
+    if(!users || !users instanceof Array || !users.length){
+        response.status(417, `Пользователи для пересоздания не указаны`);
+        return response.send();
+    }
+
+    const usersOffers = [];
+    const dateTimeNow = new Time().toShortUnix();
+
+    //поиск заказов
+    try{
+        //получение последних заказов
+        for(let i = 0; i < users.length; i++){
+            const allSelectedUsersSql = `SELECT * FROM offer WHERE user_id = ${users[i]} AND end_time > ${dateTimeNow} ORDER BY offer_id DESC LIMIT 1`;
+            const offerForUser = await db.executeWithReturning(allSelectedUsersSql);
+            usersOffers.push(offerForUser);
+        }
+
+        //информировать об отсутстви действительных заявок для пользователей
+        if(!usersOffers.length){
+            response.status(404, 'Нет действительных заявок');
+            return response.send();
+        }
+
+    }catch(err){
+        return databaseErrorHandler(err, response).send();
+    }
+
+    //удаление старых заявок и создание новых
+    try{
+        //пересоздание заявок в Marzban
+        for(let i = 0; i < usersOffers.length; i++){
+
+            //название заявки: 'тариф_идентификатор'
+            const offerName = `${usersOffers[i].sub_id}_${usersOffers[i].offer_id}`;
+
+            //удаление действительной заявки
+            const deleteData = await MarzbanAPI.DELETE_USER(offerName);
+
+            //если сервер вернул детали заказа
+            if(deleteData.detail) throw new Error(deleteData.detail);
+
+            //создание новвой заявки с тем же именем
+            const requestData = await MarzbanAPI.CREATE_USER(offerName);
+
+            //если сервер вернул детали заказа
+            if(requestData.detail) throw new Error(requestData.detail);
+
+            //обновление строки подключения в заказе
+            await OFFER.UPDATE(usersOffers[i].offer_id, {conn_string:  requestData.links[0]});
+        }
+
+        response.status(200, `Пересоздано заявок: ${usersOffers.length}`);
+        response.send();
+        
+    }catch(err){
+
+        // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
+        if (err.response) {
+            const statusCode = err.response.status;
+            const errorMessage = err.response.data || err.message;
+
+            // Ошибка при обращении к серверу
+            const error = new Error(`Marzban response ${statusCode}: ${errorMessage}`);
+
+            //вывод ошибки в консоль
+            WriteInLogFile(error);
+
+            response.status(statusCode, errorMessage);
+            return response.send();
+        } 
+        //остальные ошибки
+        else {
+            // Запрос был сделан, но ответа от сервера не было
+            err.message = err.message || 'Сервер Marzban не отвечает';
+
+            // Ошибка при обращении к серверу
+            const error = new Error(`Marzban sending response error: ${err.message}`);
+
+            //вывод ошибки в консоль
+            WriteInLogFile(error);
+
+            response.status(500, err.message);
+            return response.send();
+        }
+    }
+});
 
 //обновление данных
 app.delete('/delete', async (req, res) => {
@@ -421,7 +540,7 @@ async function confirmOffer(offerInfo, response){
         const username = `${offerInfo._sub.name_id}_${offerInfo._offer.offer_id}`;
 
         //установка даты окончания подписки
-        const expire = new Time().addTime(offerInfo._sub.date_limit * 86400000).toShortUnix();
+        const expire = offerInfo._offer.end_time;
 
         //лимит данных
         const data_limit = offerInfo._sub.data_limit * 1024**3;
@@ -446,6 +565,23 @@ async function confirmOffer(offerInfo, response){
                 shadowsocks: ['Shadowsocks TCP']
             }
         };
+
+        //удаляем предыдущий заказ, если таковой имеется
+        const oldOffer = offerInfo._offer.offer_id - 1;
+
+        //если есть старый заказ в системе Marzban - то удаляем его.
+        if(oldOffer > 0){
+
+            //ищем не истекший предыдущей заказ
+            const oldOfferInfo = await OFFER.FIND({offer_id: oldOffer}, true);
+            const dateTimeNow = new Time().toShortUnix();
+            
+            //удаляем заказ в систиме Marzban
+            if(oldOfferInfo && oldOfferInfo.end_time < dateTimeNow){
+                const oldOfferName = `${oldOffer.sub_id}_${oldOffer.offer_id}`;
+                await MarzbanAPI.DELETE_USER(oldOfferName);
+            }
+        }
 
         // Создаем нового пользователя
         const requestData = await MarzbanAPI.CREATE_USER(userData);
@@ -495,11 +631,17 @@ async function confirmOffer(offerInfo, response){
         return response.send();
     }
     catch(err){
-
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
             const errorMessage = err.response.data || err.message;
+
+            // Ошибка при обращении к серверу
+            const error = new Error(`Marzban response ${statusCode}: ${errorMessage}`);
+
+            //вывод ошибки в консоль
+            WriteInLogFile(error);
+
             response.status(statusCode, errorMessage);
             return response.send();
         } 
@@ -511,9 +653,15 @@ async function confirmOffer(offerInfo, response){
         //остальные ошибки
         else {
             // Запрос был сделан, но ответа от сервера не было
-            const resMessage = err.message || 'Сервер Marzban не отвечает';
-            if(err.message) console.error(err);
-            response.status(500, resMessage);
+            err.message = err.message || 'Сервер Marzban не отвечает';
+
+            // Ошибка при обращении к серверу
+            const error = new Error(`Marzban sending response error: ${err.message}`);
+
+            //вывод ошибки в консоль
+            WriteInLogFile(error);
+
+            response.status(500, err.message);
             return response.send();
         }
     }
@@ -525,7 +673,7 @@ async function initConnection(){
         await db.connect(`${DATABASE}.db`, 'init.sql');
     }
     catch(err){
-        console.error(err.message);
+        WriteInLogFile(err);
         throw err;
     }
 }
@@ -542,7 +690,7 @@ function databaseErrorHandler(err, response){
     }
     // Обработка критических ошибок
     else {
-        console.error(err);
+        WriteInLogFile(err);
         response.status(500, err.message);
     }
 
@@ -550,7 +698,7 @@ function databaseErrorHandler(err, response){
 }
 
 // Запуск сервера на указанном порту
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
     console.clear();
-    console.log(`Сервер прослушивается на http://localhost:${PORT}`);
+    WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT}`);
 });

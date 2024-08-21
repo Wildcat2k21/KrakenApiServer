@@ -10,8 +10,8 @@ class USER {
     }
 
     //поиск пользвоателя
-    static async FIND(params, limit){
-        return await USER.database.find('user', params, limit);
+    static async FIND(params, limit, desc){
+        return await USER.database.find('user', params, limit, desc);
     }
 
     //подсчет количества записей
@@ -42,7 +42,7 @@ class USER {
         }
 
         //установление даты регистрации
-        const registration_date = new Time().fromUnix();
+        const registration_date = new Time().toShortUnix();
         const dataWithDate = {...data, registration_date, invite_code};
 
         //выполнение запроса
@@ -60,14 +60,14 @@ class OFFER {
     }
 
     //поиск заказов
-    static async FIND(params, limit){
-        return await OFFER.database.find('offer', params, limit);
+    static async FIND(params, limit, desc){
+        return await OFFER.database.find('offer', params, limit, desc);
     }
 
     //добавление заказа
     static async NEW(data){
         //установление даты заказа
-        const created_date = new Time().fromUnix();
+        const created_date = new Time().toShortUnix();
         const offerWithDate = {...data, created_date};
 
         return await OFFER.database.insert('offer', offerWithDate);
@@ -89,8 +89,8 @@ class SUB {
     }
 
     //поиск подписок
-    static async FIND(params, limit){
-        return await SUB.database.find('sub', params, limit);
+    static async FIND(params, limit, desc){
+        return await SUB.database.find('sub', params, limit, desc);
     }
 }
 
@@ -104,8 +104,8 @@ class PROMO {
     }
 
     //поиск промокодов
-    static async FIND(params, limit){
-        return await PROMO.database.find('promo', params, limit);
+    static async FIND(params, limit, desc){
+        return await PROMO.database.find('promo', params, limit, desc);
     }
 }
 

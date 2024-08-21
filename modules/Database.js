@@ -1,6 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const path = require('path');
+const {WriteInLogFile} = require('./Other');
 
 //модуль для работы с базой данных
 class Database {
@@ -69,7 +70,7 @@ class Database {
         });
     }
 
-    async find(tableName, params, limit){
+    async find(tableName, params, limit, desc) {
         return new Promise((resolve, reject) => {
 
             //значения полей для вствки
@@ -81,11 +82,14 @@ class Database {
             //установка ограничения
             const limitClause = limit ? ` LIMIT ${Number(limit)}` : '';
 
+            //сортировка
+            const orderClause = desc ? ` ORDER BY DESC` : '';
+
             //установка условия
             const condition = (sql_params.length) ? ` WHERE ${sql_params.join(' AND ')}` : '';
 
             //формирование запроса
-            const sql = `SELECT * FROM ${tableName}${condition}${limitClause}`;
+            const sql = `SELECT * FROM ${tableName}${condition}${orderClause}${limitClause}`;
 
             // Выполнение запроса
             this.executeWithReturning(sql).then(result => {
@@ -133,12 +137,12 @@ class Database {
                 });
 
                 //логи и файл инициализации
-                console.log('База данных подключена⚡');
+                WriteInLogFile('База данных подключена⚡');
                 const sqlFile = path.resolve(sqlFilePath);
 
                 //проверка на существование не пустой базы данных
                 if(fs.statSync(dbPath).size > 0) {
-                    console.log('Инициазация не трубется 👌');
+                    WriteInLogFile('Инициазация не трубется 👌');
                     return resolve();
                 }
 
@@ -148,7 +152,7 @@ class Database {
 
                     this.db.exec(data, (err) => {
                         if (err) return reject(new Error(`Не удалось выполнить SQL файл: ${err.message}`));
-                        console.log('База данных успешно инициализирована ✨');
+                        WriteInLogFile('База данных успешно инициализирована ✨');
                         resolve();
                     });
                 });
@@ -161,7 +165,7 @@ class Database {
         if (this.db) {
             this.db.close((err) => {
                 if (err) throw new Error(`Ошибка при закрытии базы данных: ${err.message}`) 
-                else console.log('База данных закрыта. 👋👋👋');
+                else WriteInLogFile('База данных закрыта. 👋👋👋');
             });
         }
     }
