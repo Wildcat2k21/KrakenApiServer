@@ -398,13 +398,13 @@ app.patch('/recreate', async (req, res) => {
             //удаление действительной заявки
             const deleteData = await MarzbanAPI.DELETE_USER(offerName);
 
-            //если сервер вернул детали заказа
+            //detail содержит ошибку Marzban
             if(deleteData.detail) throw new Error(deleteData.detail);
 
             //создание новвой заявки с тем же именем
             const requestData = await MarzbanAPI.CREATE_USER(offerName);
 
-            //если сервер вернул детали заказа
+            //detail содержит ошибку Marzban
             if(requestData.detail) throw new Error(requestData.detail);
 
             //обновление строки подключения в заказе
@@ -579,12 +579,18 @@ async function confirmOffer(offerInfo, response){
             //удаляем заказ в систиме Marzban
             if(oldOfferInfo && oldOfferInfo.end_time < dateTimeNow){
                 const oldOfferName = `${oldOffer.sub_id}_${oldOffer.offer_id}`;
-                await MarzbanAPI.DELETE_USER(oldOfferName);
+                const deleteData = await MarzbanAPI.DELETE_USER(oldOfferName);
+                
+                //detail содержит ошибку Marzban
+                if(deleteData.detail) throw new Error(deleteData.detail);
             }
         }
 
         // Создаем нового пользователя
         const requestData = await MarzbanAPI.CREATE_USER(userData);
+
+        //detail содержит ошибку Marzban
+        if(requestData.detail) throw new Error(requestData.detail);
 
         //установка текста подписки пользователя и отметка что был заказ
         await OFFER.UPDATE(offerInfo._offer.offer_id, {conn_string: requestData.links[0]});

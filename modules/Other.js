@@ -71,7 +71,6 @@ function WriteInLogFile(messageOrError){
     //информация для лога
     const time = new Time().fromUnix(true);
     const isError = messageOrError instanceof Error;
-
     let logClause = '', altnameClause = '', detailClause = '', messageLog = '';
 
     if(isError){
