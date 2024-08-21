@@ -23,6 +23,8 @@ const app = express();
 // Инициализация базы данных
 initConnection();
 
+//примечание: Возможно if(err.response) || err.message никогда не выполнится
+
 // Инициализация сущностей
 const user = new USER(db);
 const offer = new OFFER(db);
@@ -393,16 +395,34 @@ app.patch('/recreate', async (req, res) => {
         for(let i = 0; i < usersOffers.length; i++){
 
             //название заявки: 'тариф_идентификатор'
-            const offerName = `${usersOffers[i].sub_id}_${usersOffers[i].offer_id}`;
-
-            //ВРЕМЕННО
-            console.log(offerName);
+            const username = `${usersOffers[i].sub_id}_${usersOffers[i].offer_id}`;
 
             //удаление действительной заявки
-            await MarzbanAPI.DELETE_USER(offerName);
+            await MarzbanAPI.DELETE_USER(username);
+
+            //тут генерируем строку подключения и передаем ее пользователю
+            const userData = {
+                status: 'active',
+                username, //имя тарифа
+                note: 'by API server', //примечание
+                proxies: {
+                    vless: {
+                        flow: 'xtls-rprx-vision'
+                    }
+                },
+                data_limit, //ГБ * 1024**3  
+                expire, //Unix-время в секундах работы тарифа
+                data_limit_reset_strategy: 'no_reset',
+                inbounds: {
+                    vmess: ['VMess TCP', 'VMess Websocket'],
+                    vless: ['VLESS TCP REALITY'],
+                    trojan: ['Trojan Websocket TLS'],
+                    shadowsocks: ['Shadowsocks TCP']
+                }
+            };
 
             //создание новвой заявки с тем же именем
-            const requestData = await MarzbanAPI.CREATE_USER(offerName);
+            const requestData = await MarzbanAPI.CREATE_USER(userData);
 
             //обновление строки подключения в заказе
             await OFFER.UPDATE(usersOffers[i].offer_id, {conn_string:  requestData.links[0]});
@@ -416,9 +436,7 @@ app.patch('/recreate', async (req, res) => {
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
-            const errorMessage = err.response.detail || err.response.data || err.message;
-
-            console.log(777, err.response.data);
+            const errorMessage = err.message || err.response.data.detail.body;
 
             // Ошибка при обращении к серверу
             const error = new Error(`Marzban response ${statusCode}: ${errorMessage}`);
@@ -633,7 +651,7 @@ async function confirmOffer(offerInfo, response){
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
-            const errorMessage = err.response.data || err.message || err.response.detail;
+            const errorMessage = err.message || err.response.data.detail.body;
 
             // Ошибка при обращении к серверу
             const error = new Error(`Marzban response ${statusCode}: ${errorMessage}`);
