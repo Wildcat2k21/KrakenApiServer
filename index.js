@@ -606,7 +606,7 @@ async function confirmOffer(offerInfo, response){
             const dateTimeNow = new Time().toShortUnix();
             
             //удаляем заказ в систиме Marzban
-            if(oldOfferInfo && oldOfferInfo.end_time < dateTimeNow){
+            if(oldOfferInfo && oldOfferInfo.end_time > dateTimeNow){
                 const oldOfferName = `${oldOffer.sub_id}_${oldOffer.offer_id}`;
                 await MarzbanAPI.DELETE_USER(oldOfferName);
             }

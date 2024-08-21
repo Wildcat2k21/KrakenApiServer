@@ -3,5 +3,6 @@
   "total_participants_limit": 15,
   "invite_discount": 25,
   "welcome_message": "youre welcome!",
-  "limit_participants_message": "reached limit!"
+  "limit_participants_message": "reached limit!",
+  "autoclear_excited_offers": 1
 }
