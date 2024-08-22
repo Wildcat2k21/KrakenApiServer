@@ -831,5 +831,5 @@ function databaseErrorHandler(err, response){
 // Запуск сервера на указанном порту
 app.listen(PORT, '0.0.0.0', async () => {
     console.clear();
-    WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT}`);
+    WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
 });
