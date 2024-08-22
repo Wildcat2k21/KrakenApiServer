@@ -104,6 +104,11 @@ app.post('/offer', async (req, res) => {
         //поиск отметки на первый заказ
         offer_user = await USER.FIND({telegram_id: body.user_id}, true);
 
+        if(!offer_user){
+            response.status(404, 'Пользователь не найден');
+            return response.send();
+        }
+
         if(!offer_sub){
             response.status(404, 'Подписка не найдена');
             return response.send();
