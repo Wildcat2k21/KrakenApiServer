@@ -684,7 +684,7 @@ async function confirmOffer(offerInfo, response){
             SELECT * FROM offer
             WHERE
                 offer_id < ${offerInfo._offer.offer_id}
-                AND user_id = ${users[i]}
+                AND user_id = ${offerInfo._user.telegram_id}
                 AND conn_string IS NOT NULL
             ORDER BY offer_id DESC
             LIMIT 1
