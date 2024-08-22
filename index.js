@@ -687,7 +687,7 @@ async function confirmOffer(offerInfo, response){
                 await MarzbanAPI.DELETE_USER(oldOfferName);
 
                 //удаление мониторинга с предыдущего заказа
-                AutoClearMarzbanExcitedOffers.removeTrack(offerInfo._offer.offer_id);
+                AutoClearMarzbanExcitedOffers.removeTrack(oldOfferInf.offer_id);
             }
         }
 
