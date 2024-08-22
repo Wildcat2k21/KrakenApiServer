@@ -81,6 +81,13 @@ app.post('/user', async (req, res) => {
 app.post('/offer', async (req, res) => {
 
     const response = new Response(res);
+
+    //проверка разрешения новых заказов
+    if(!config.accept_new_offers){
+        response.status(403, config.new_offers_limis_message);
+        return response.send();
+    }
+
     const body = req.body;
     
     //идентификатор заказа
