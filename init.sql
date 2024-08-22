@@ -20,7 +20,7 @@ CREATE TABLE user (
     telegram_id INTEGER PRIMARY KEY,
     full_name TEXT NOT NULL CHECK(LENGTH(full_name) <= 100),
     education_status TEXT NOT NULL CHECK(LENGTH(education_status) <= 50),
-    phone_number TEXT NOT NULL CHECK(LENGTH(phone_number) <= 15),
+    phone_number INTEGER NOT NULL, 
     email TEXT NOT NULL CHECK(LENGTH(email) <= 100),
     registration_date INTEGER NOT NULL,
     telegram TEXT NOT NULL CHECK(LENGTH(telegram) <= 32),
