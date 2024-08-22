@@ -44,74 +44,6 @@ class Time{
     }
 }
 
-//автоматическая отчистка истекших заказов
-class AutoClearMarzbanExcitedOffers{
-
-    //стек офферов
-    static stack = [];
-
-    //Данный класс может содержать устаревшие данные о заказе (как строка подключения)
-    //Однако имя заказа и дату истечения класс всегда должен держать верную
-
-    //очистка стека 
-    static removeTrack(offer_id){
-        //очистка таймаута
-        const thisOffer = AutoClearMarzbanExcitedOffers.stack.find(item => item.offer_id === offer_id);
-
-        //удаление из стека
-        if(thisOffer) {
-            WriteInLogFile(`Отменен мониторинг для заказа ${offer_id} 👌`);
-            clearTimeout(thisOffer._timeout_id);
-            AutoClearMarzbanExcitedOffers.stack = AutoClearMarzbanExcitedOffers.stack.filter((item) => item.offer_id !== offer_id);
-        }
-        else WriteInLogFile(`Для заказа №${offer_id} мониторинг не был установлен ранее 🔭`);
-    }
-
-    static track(offer){
-        
-        //получение времени
-        const timeNow = Date.now();
-        const endTime = offer.end_time;
-        const timeout = Math.ceil(endTime * 1000 - timeNow);
-
-        //проверка на истечение времени (Не может работать для нового заказа)
-        if(timeout < 0) return;
-
-        //запуск таймера
-        offer['_timeout'] = timeout;
-        offer['_timeout_id'] = setTimeout(async () => {
-            const username = `${offer.sub_id}_${offer.offer_id}`;
-            try{
-                //очистка пользователя и удаление из стека
-                await MarzbanAPI.DELETE_USER(username);
-                AutoClearMarzbanExcitedOffers.stack = AutoClearMarzbanExcitedOffers.stack.filter((item) => item.offer_id !== offer.offer_id);
-                
-                WriteInLogFile(`Удален истекший заказ Marzban: ${username} ⌛`);
-            }
-            catch(err){
-
-                // Ошибка при обращении к серверу
-                if (err.response) {
-                    const statusCode = err.response.status;
-                    const errorMessage = err.response.data.detail;
-
-                    WriteInLogFile(new Error(`Не удалось удалить заказ Marzban: ${statusCode} ${errorMessage}`));
-                }
-                else {
-                    // Запрос был сделан, но ответа от сервера не было
-                    err.message = 'Запланированое удаление заказа Marzban: ' + (err.message || 'Сервер Marzban не отвечает');
-
-                    WriteInLogFile(err);
-                }
-            }
-        }, timeout);
-
-        //добавление в стек
-        AutoClearMarzbanExcitedOffers.stack.push(offer);
-        WriteInLogFile(`Мониторинг заказа Marzban №${offer.offer_id}. Заказ будет удален в системе: ${new Time(endTime).fromUnix(true)} 🕓`);
-    }
-}
-
 function RandCode(length = 6) {
     const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
@@ -151,4 +83,4 @@ function WriteInLogFile(messageOrError){
     }
 }
 
-module.exports = {Time, RandCode, WriteInLogFile, AutoClearMarzbanExcitedOffers};
+module.exports = {Time, RandCode, WriteInLogFile};

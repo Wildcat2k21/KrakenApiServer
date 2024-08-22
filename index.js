@@ -7,7 +7,7 @@ require('dotenv').config();
 const fs = require('fs');
 
 //пользовательские модули
-const {Time, WriteInLogFile, AutoClearMarzbanExcitedOffers} = require('./modules/Other.js');
+const {Time, WriteInLogFile} = require('./modules/Other.js');
 const {checkUserFields, checkOfferFields, checkConfigFields
 } = require('./modules/Data.js');
 
@@ -685,9 +685,6 @@ async function confirmOffer(offerInfo, response){
             if(oldOfferInf && oldOfferInf.end_time > dateTimeNow){
                 const oldOfferName = `${oldOfferInf.sub_id}_${oldOfferInf.offer_id}`;
                 await MarzbanAPI.DELETE_USER(oldOfferName);
-
-                //удаление мониторинга с предыдущего заказа
-                AutoClearMarzbanExcitedOffers.removeTrack(oldOfferInf.offer_id);
             }
         }
 
@@ -717,11 +714,6 @@ async function confirmOffer(offerInfo, response){
 
         //обновление пользователя
         if(userUpdateOptions) await USER.UPDATE(offerInfo._offer.user_id, userUpdateOptions);
-
-        //добавление мониторинга истечения заказа
-        if(config.autoclear_excited_offers){
-            AutoClearMarzbanExcitedOffers.track(offerInfo._offer);
-        }
 
         //если подписка бесплатная, убрать информацию о скидке и к оплате
         if(offerInfo._offer.sub_id === 'free'){
@@ -792,16 +784,6 @@ async function initConnection(){
         if(!config.autoclear_excited_offers) return;
 
         //автоматическое восстановление мониторинга заказав
-        const offers = await OFFER.FIND({});
-
-        if(offers.length){
-            WriteInLogFile(`Мониторинг количества заказов 🔍: ${offers.length}`);
-            //запуск мониторинга
-            offers.forEach(offer => {
-                AutoClearMarzbanExcitedOffers.track(offer);
-            });
-        }
-        else WriteInLogFile('Нет действительных заказов для мониторинга ✔️');
     }
     catch(err){
         WriteInLogFile(err);
