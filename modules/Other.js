@@ -70,9 +70,9 @@ class AutoClearMarzbanExcitedOffers{
     static track(offer){
         
         //получение времени
-        const timeNow = Math.ceil(Date.now() / 1000);
+        const timeNow = Date.now();
         const endTime = offer.end_time;
-        const timeout = (endTime - timeNow) * 1000;
+        const timeout = Math.ceil(endTime * 1000 - timeNow);
 
         //проверка на истечение времени (Не может работать для нового заказа)
         if(timeout < 0) return;
