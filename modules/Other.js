@@ -71,7 +71,7 @@ class AutoClearMarzbanExcitedOffers{
         
         //получение времени
         const timeNow = Date.now();
-        const endTime = new offerInfo.end_time;
+        const endTime = offerInfo.end_time;
         const timeout = endTime - timeNow;
 
         //проверка на истечение времени
