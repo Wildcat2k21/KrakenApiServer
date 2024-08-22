@@ -11,7 +11,7 @@ class Time{
             throw new Error(`Некорретное время: '${shortUnix}'. Укажите Unix-время в секундах`);
         }
 
-        this.time = shortUnix || (Date.now() / 1000);
+        this.time = shortUnix || Math.ceil(Date.now() / 1000);
     }
 
     //формат ISO 8601: YY-MM-DD
