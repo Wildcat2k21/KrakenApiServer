@@ -204,7 +204,7 @@ app.patch('/confirm', async (req, res) => {
 
         //если такой заявки нет
         if(!offerInfo){
-            response.status(404, `Заявка с offer_id: '${offer_id}' не найдена`);
+            response.status(404, `Заявка не найдена`);
             return response.send();
         }
 
@@ -678,7 +678,7 @@ async function confirmOffer(offerInfo, response){
         if(oldOffer > 0){
 
             //ищем старый не истекший заказ
-            const oldOfferInf = await OFFER.FIND({offer_id: oldOffer}, true);
+            const oldOfferInf = await OFFER.FIND({offer_id: oldOffer, user_id: offerInfo._offer.user_id}, true);
             const dateTimeNow = new Time().shortUnix();
             
             //удаляем старый заказ в систиме Marzban
@@ -787,6 +787,20 @@ async function confirmOffer(offerInfo, response){
 async function initConnection(){ 
     try{
         await db.connect(`${DATABASE}.db`, 'init.sql');
+
+        //восстановление мониторинга
+        if(!config.autoclear_excited_offers) return;
+
+        //автоматическое восстановление мониторинга заказав
+        const offers = await OFFER.FIND({});
+
+        if(offers.length){
+            WriteInLogFile(`Мониторинг количества заказов: ${offers.length}`);
+        }
+        
+        offers.forEach(offer => {
+            AutoClearMarzbanExcitedOffers.track(offer);
+        });
     }
     catch(err){
         WriteInLogFile(err);
