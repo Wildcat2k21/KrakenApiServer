@@ -2,12 +2,14 @@ const {USER, OFFER, SUB, PROMO} = require('./modules/Entities.js');
 const MarzbanAPI = require('./modules/MarzbanAPI.js');
 const Response = require('./modules/Response.js');
 const Database = require('./modules/Database.js');
-const {Time, WriteInLogFile} = require('./modules/Other.js');
 const express = require('express');
-const { checkUserFields, checkOfferFields, checkConfigFields
-} = require('./modules/Data.js');
 require('dotenv').config();
 const fs = require('fs');
+
+//пользовательские модули
+const {Time, WriteInLogFile, AutoClearMarzbanExcitedOffers} = require('./modules/Other.js');
+const {checkUserFields, checkOfferFields, checkConfigFields
+} = require('./modules/Data.js');
 
 // Конфигурация
 let config = require('./config.json');
@@ -23,7 +25,9 @@ const app = express();
 // Инициализация базы данных
 initConnection();
 
-//примечание: Возможно if(err.response) || err.message никогда не выполнится
+//примечание: Возможно if(err.response) || err.message никогда не выполнится с MarzbanAPI
+//Было исправлено только в месте использования MarzbanAPI без запросов к сторонним сервисам
+//потенциально имеются места для push уведомлений сервиса телеграм
 
 // Инициализация сущностей
 const user = new USER(db);
@@ -142,7 +146,7 @@ app.post('/offer', async (req, res) => {
         body.promo_id = offer_promo.name_id;
 
         //время окончания подписки
-        body.end_time = new Time().addTime(offer_sub.date_limit).toShortUnix();
+        body.end_time = new Time().addTime(offer_sub.date_limit).shortUnix();
 
         //создание нового заказа
         paymentCalc = calcPriceAndDiscount(offer_sub.price, offer_user.invite_count, offer_promo.discount);
@@ -368,7 +372,7 @@ app.patch('/recreate', async (req, res) => {
     }
 
     const usersOffers = [];
-    const dateTimeNow = new Time().toShortUnix();
+    const dateTimeNow = new Time().shortUnix();
 
     //поиск заказов
     try{
@@ -443,13 +447,10 @@ app.patch('/recreate', async (req, res) => {
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
-            const errorMessage = err.message || err.response.data.detail.body;
-
-            // Ошибка при обращении к серверу
-            const error = new Error(`Marzban response ${statusCode}: ${errorMessage}`);
+            const errorMessage = err.response.data.detail.body;
 
             //вывод ошибки в консоль
-            WriteInLogFile(error);
+            WriteInLogFile(new Error(`Marzban response ${statusCode}: ${errorMessage}`));
 
             response.status(statusCode, errorMessage);
             return response.send();
@@ -464,11 +465,8 @@ app.patch('/recreate', async (req, res) => {
             // Запрос был сделан, но ответа от сервера не было
             err.message = err.message || 'Сервер Marzban не отвечает';
 
-            // Ошибка при обращении к серверу
-            const error = new Error(`Marzban sending response error: ${err.message}`);
-
             //вывод ошибки в консоль
-            WriteInLogFile(error);
+            WriteInLogFile(new Error(`Marzban sending response error: ${err.message}`));
 
             response.status(500, err.message);
             return response.send();
@@ -601,14 +599,17 @@ async function confirmOffer(offerInfo, response){
         //если есть старый заказ в системе Marzban - то удаляем его.
         if(oldOffer > 0){
 
-            //ищем не истекший предыдущей заказ
+            //ищем старый не истекший заказ
             const oldOfferInf = await OFFER.FIND({offer_id: oldOffer}, true);
-            const dateTimeNow = new Time().toShortUnix();
+            const dateTimeNow = new Time().shortUnix();
             
-            //удаляем заказ в систиме Marzban
+            //удаляем старый заказ в систиме Marzban
             if(oldOfferInf && oldOfferInf.end_time > dateTimeNow){
                 const oldOfferName = `${oldOfferInf.sub_id}_${oldOfferInf.offer_id}`;
                 await MarzbanAPI.DELETE_USER(oldOfferName);
+
+                //удаление мониторинга с предыдущего заказа
+                AutoClearMarzbanExcitedOffers.removeTrack(offerInfo._offer.offer_id);
             }
         }
 
@@ -639,6 +640,11 @@ async function confirmOffer(offerInfo, response){
         //обновление пользователя
         if(userUpdateOptions) await USER.UPDATE(offerInfo._offer.user_id, userUpdateOptions);
 
+        //добавление мониторинга истечения заказа
+        if(config.autoclear_excited_offers){
+            AutoClearMarzbanExcitedOffers.track(offerInfo._offer);
+        }
+
         //если подписка бесплатная, убрать информацию о скидке и к оплате
         if(offerInfo._offer.sub_id === 'free'){
             delete offerInfo.discount;
@@ -653,6 +659,9 @@ async function confirmOffer(offerInfo, response){
 
         // Ответ для сервера
         const responseData = {...offerInfo, connection: requestData.links[0]};
+
+        //тут уведомление о новой заявке (бесплатная платная для администратора)
+        //и уведомление пользователя о одобрении заявки (бесплатная одобряется сразу)
 
         //отправка ответа
         response.status(201, 'created');

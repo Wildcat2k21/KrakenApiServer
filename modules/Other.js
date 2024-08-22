@@ -1,21 +1,22 @@
 
 const fs = require('fs');
+const MarzbanAPI = require('./MarzbanAPI.js');
 
 class Time{
 
-    constructor(dateString = Date.now(), unixFormat = true){
-        if(unixFormat){
-            if(typeof dateString !== 'number') throw new Error(`Некорретное время: '${dateString}'. Укажите Unix-время в миллисекундах`);
-            this.time = dateString;
-        //конвертация в UTC время
-        }else{
-            this.time = this.toUnix(dateString);
+    constructor(shortUnix){
+
+        //проверка корректности
+        if (typeof shortUnix !== 'number' && shortUnix) {
+            throw new Error(`Некорретное время: '${shortUnix}'. Укажите Unix-время в секундах`);
         }
+
+        this.time = shortUnix || (Date.now() / 1000);
     }
 
     //формат ISO 8601: YY-MM-DD
-    fromUnix(filldate = false){
-        const date = new Date(this.time);
+    fromUnix(fulltime = false){
+        const date = new Date(this.time * 1000);
         const day = String(date.getDate()).padStart(2, '0');    // Заполнение нулями
         const month = String(date.getMonth() + 1).padStart(2, '0'); // Заполнение нулями
         const year = date.getFullYear();
@@ -23,35 +24,87 @@ class Time{
         const minutes = String(date.getMinutes()).padStart(2, '0'); // Заполнение нулями
         const seconds = String(date.getSeconds()).padStart(2, '0'); // Заполнение нулями
 
-        const formattedDate = `${year}-${month}-${day}${filldate ? ` ${hours}:${minutes}:${seconds}` : ''}`;
+        const formattedDate = `${year}-${month}-${day}${fulltime ? ` ${hours}:${minutes}:${seconds}` : ''}`;
         
         return formattedDate; 
     }
 
     addTime(shortUnix){
-        if(typeof shortUnix !== 'number') throw new Error(`Некорретное время: '${shortUnix}'. Укажите Unix-время в миллисекундах`);
-        return new this.constructor(this.time + shortUnix * 1000); 
-    }
 
-    toShortUnix(dateString){
-        const shortUnixTime = Math.ceil(this.toUnix(dateString)/1000);
-        return shortUnixTime;
-    }
-
-    toUnix(dateString){
-
-        //текущее время
-        if(!dateString) return this.time;
-
-        //формат ISO 8601: YY-MM-DD
-        if(typeof dateString !== 'string' || dateString.length !== 10 || !dateString.match(/\d{4}-\d{2}-\d{2}/)){
-            throw new Error(`Некорретное время: '${dateString}'. Укажите yyyy-mm-dd`);
+        //проверка корректности
+        if(typeof shortUnix !== 'number') {
+            throw new Error(`Некорретное время: '${shortUnix}'. Укажите Unix-время в миллисекундах`);
         }
 
-        //преобразование в миллисекунды
-        const [day, month, year] = dateString.split('-');
-        const date = new Date(year, month - 1, day);
-        return date.getTime();
+        return new this.constructor(this.time + shortUnix); 
+    }
+
+    shortUnix(){
+        return this.time;
+    }
+}
+
+//автоматическая отчистка истекших заказов
+class AutoClearMarzbanExcitedOffers{
+
+    //стек офферов
+    static stack = [];
+
+    //Данный класс может содержать устаревшие данные о заказе (как строка подключения)
+    //Однако имя заказа и дату истечения класс всегда должен держать верную
+
+    //очистка стека 
+    static async removeTrack(offer_id){
+        //очистка таймаута
+        const thisOffer = AutoClearMarzbanExcitedOffers.stack.find(item => item.offer_id === offer_id);
+
+        //удаление из стека
+        if(thisOffer) {
+            WriteInLogFile(`Отменен мониторинг для заказа ${offer_id}`);
+            clearTimeout(thisOffer._timeout_id);
+            AutoClearMarzbanExcitedOffers.stack = AutoClearMarzbanExcitedOffers.stack.filter((item) => item.offer_id !== offer_id);
+        }
+        else WriteInLogFile(`Для заказа: '${offer_id}' мониторинг не был установлен ранее`);
+    }
+
+    static async track(offerInfo){
+        
+        //получение времени
+        const timeNow = new Date.now();
+        const endTime = new offerInfo.end_time;
+        const timeout = endTime - timeNow;
+
+        //проверка на истечение времени
+        if(timeout < 0) return;
+
+        //запуск таймера
+        offerInfo['_timeout'] = timeout;
+        offerInfo['_timeout_id'] = setTimeout(async () => {
+            const username = `${offerInfo.sub_id}_${offerInfo.offer_id}`;
+            try{
+                //очистка пользователя и удаление из стека
+                await MarzbanAPI.DELETE_USER(username);
+                AutoClearMarzbanExcitedOffers.stack = AutoClearMarzbanExcitedOffers.stack.filter((item) => item.offer_id !== offerInfo.offer_id);
+                
+                WriteInLogFile(`Удален истекший пользователь Marzban: ${username}`);
+            }
+            catch(err){
+
+                // Ошибка при обращении к серверу
+                if (err.response) {
+                    const statusCode = err.response.status;
+                    const errorMessage = err.response.data.detail.body;
+    
+                    WriteInLogFile(new Error(`Marzban response ${statusCode}: ${errorMessage}`));
+                }
+                else {
+                    // Запрос был сделан, но ответа от сервера не было
+                    err.message = err.message || 'Сервер Marzban не отвечает';
+
+                    WriteInLogFile(err);
+                }
+            }
+        }, timeout)
     }
 }
 
@@ -71,18 +124,17 @@ function WriteInLogFile(messageOrError){
     //информация для лога
     const time = new Time().fromUnix(true);
     const isError = messageOrError instanceof Error;
-    let logClause = '', altnameClause = '', detailClause = '', messageLog = '';
+    let logClause = '', detailClause = '', messageLog = '';
 
     if(isError){
         //информация об ошибке
         logClause = ` [ERROR]: ${messageOrError.message}`;
         detailClause = messageOrError.stack ? `\n[DETAIL]: ${messageOrError.stack}` : '';
-        if(messageOrError.altname) altnameClause = ` [ALTNAME]: ${messageOrError.altname}`;
     }
     else logClause = ` [INFO]: ${messageOrError}`;
 
     //сообщение для лога
-    messageLog = `[${time}]${altnameClause}${logClause}${detailClause}\n`;
+    messageLog = `[${time}]${logClause}${detailClause}\n`;
 
     //вывод в консоль
     console.log(messageLog);
@@ -95,4 +147,4 @@ function WriteInLogFile(messageOrError){
     }
 }
 
-module.exports = {Time, RandCode, WriteInLogFile};
+module.exports = {Time, RandCode, WriteInLogFile, AutoClearMarzbanExcitedOffers};

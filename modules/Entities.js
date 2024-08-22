@@ -42,7 +42,7 @@ class USER {
         }
 
         //установление даты регистрации
-        const registration_date = new Time().toShortUnix();
+        const registration_date = new Time().shortUnix();
         const dataWithDate = {...data, registration_date, invite_code};
 
         //выполнение запроса
@@ -67,7 +67,7 @@ class OFFER {
     //добавление заказа
     static async NEW(data){
         //установление даты заказа
-        const created_date = new Time().toShortUnix();
+        const created_date = new Time().shortUnix();
         const offerWithDate = {...data, created_date};
 
         return await OFFER.database.insert('offer', offerWithDate);
