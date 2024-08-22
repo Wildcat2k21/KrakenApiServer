@@ -69,7 +69,7 @@ app.post('/user', async (req, res) => {
     // Выполнение опреации вставки
     try{
         await USER.NEW(body);
-        response.status(201, 'created')
+        response.status(201, 'Создано')
         return response.send();
     }
     catch(err){
@@ -156,9 +156,12 @@ app.post('/offer', async (req, res) => {
         //создание нового заказа
         paymentCalc = calcPriceAndDiscount(offer_sub.price, offer_user.invite_count, offer_promo.discount);
 
+        //установление порядкового номера заказа пользователя
+        // const priviousUserOffer = await OFFER.FIND({user_id: offer_user.user_id, user_offer_id}, true);
+
         //создание нового заказа
         offer_id = await OFFER.NEW({...body, ...paymentCalc});
-        response.status(201, 'created');
+        response.status(201, 'Создано');
     }
     catch(err){
         return databaseErrorHandler(err, response).send();
@@ -190,6 +193,81 @@ app.post('/offer', async (req, res) => {
 
     }catch(err){
         return databaseErrorHandler(err, response).send();
+    }
+});
+
+//получение информации о заказе
+app.get('/offer', async (req, res) => {
+    const response = new Response(res);
+    const telegram_id = req.query.telegram_id;
+
+    //проверка входных данных
+    if(typeof telegram_id !== 'number'){
+        response.status(417, 'Не передан telegram_id');
+        return response.send();
+    }
+
+    //получение информации о заказе
+    try{
+        const offerSql = `SELECT * FROM offer WHERE user_id = ${users[i]} ORDER BY offer_id DESC LIMIT 1`;
+        const lastOffer = await db.executeWithReturning(offerSql);
+        
+        //информировать об отсутстви действительных заявок для пользователей
+        if(!lastOffer.length) {
+            response.status(404, 'Нет действительных заявок');
+            return response.send();
+        }
+
+        //получение информации о тарифе
+        const offerSub = await SUB.FIND({sub_id: lastOffer[0].sub_id}, true);
+
+        //название пользователя
+        const username = `${lastOffer[0].sub_id}_${lastOffer[0].offer_id}`;
+
+        //информация о заказе в системе Marzban
+        const marzbanInfo = await MarzbanAPI.GET_USER(username); 
+
+        //формирование ответа
+        const offerInfo = {
+            subName: offerSub.title,
+            subDataGBLimit: offerSub.data_limit,
+            usedGBtraffic: marzbanInfo.used_traffic / 1024**3,
+            subDateLimit: new Time(offerSub.date_limit).fromUnix(true),
+            createdDate: new Time(lastOffer[0].create_date).fromUnix(true)
+        }
+
+        //ответ
+        response.body = offerInfo;
+        response.send();
+
+    }catch(err){
+        // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
+        if (err.response) {
+            const statusCode = err.response.status;
+            const errorMessage = err.response.data.detail;
+
+            //вывод ошибки в консоль
+            WriteInLogFile(new Error(`Marzban response: ${statusCode} ${errorMessage}`));
+
+            response.status(statusCode, 'Что-то пошло не так, попробуйте позже');
+            return response.send();
+        } 
+        //обработка ошибок базы данных
+        else if(err.message && err.message.indexOf('SQLITE') !== -1){
+            return databaseErrorHandler(err, response).send();
+
+        }
+        //остальные ошибки
+        else {
+            // Запрос был сделан, но ответа от сервера не было
+            err.message = err.message || 'Сервер Marzban не отвечает';
+
+            //вывод ошибки в консоль
+            WriteInLogFile(new Error(`Marzban sending response error: ${err.message}`));
+
+            response.status(500, 'Что-то пошло не так, попробуйте позже');
+            return response.send();
+        }
     }
 });
 
@@ -248,7 +326,7 @@ app.post('/configure', (req, res) => {
     fs.writeFile('./config.json', JSON.stringify(req.body, null, 2), (err) => {
         if (err) {
             WriteInLogFile(err);
-            response.status(500, err.message);
+            response.status(500, 'Что-то пошло не так, попробуйте позже');
         };
     });
 
@@ -274,26 +352,10 @@ app.get('/logs', async (req, res) => {
     }
     catch(err){
         WriteInLogFile(err);
-        response.status(500, err.message);
+        response.status(500, 'Что-то пошло не так, попробуйте позже');
     }
 
     response.send();
-});
-
-// получение подписок
-app.get('/subscription', async (req, res) => {
-
-    const response = new Response(res);
-    const searchData = req.body;
-
-    // Получение всех подписок
-    try{
-        response.body = await SUB.FIND(searchData);
-        response.send();
-    }
-    catch(err){
-        return databaseErrorHandler(err, response).send();
-    }
 });
 
 //получение данных по фильтрам
@@ -460,7 +522,7 @@ app.patch('/recreate', async (req, res) => {
             //вывод ошибки в консоль
             WriteInLogFile(new Error(`Marzban response: ${statusCode} ${errorMessage}`));
 
-            response.status(statusCode, errorMessage);
+            response.status(statusCode, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         } 
         //обработка ошибок базы данных
@@ -476,86 +538,11 @@ app.patch('/recreate', async (req, res) => {
             //вывод ошибки в консоль
             WriteInLogFile(new Error(`Marzban sending response error: ${err.message}`));
 
-            response.status(500, err.message);
+            response.status(500, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         }
     }
 });
-
-//получение информации о заказе
-app.get('/offer', async (req, res) => {
-    const response = new Response(res);
-    const telegram_id = req.query.telegram_id;
-
-    //проверка входных данных
-    if(typeof telegram_id !== 'number'){
-        response.status(417, 'Не передан telegram_id');
-        return response.send();
-    }
-
-    //получение информации о заказе
-    try{
-        const offerSql = `SELECT * FROM offer WHERE user_id = ${users[i]} ORDER BY offer_id DESC LIMIT 1`;
-        const lastOffer = await db.executeWithReturning(offerSql);
-        
-        //информировать об отсутстви действительных заявок для пользователей
-        if(!lastOffer.length) {
-            response.status(404, 'Нет действительных заявок');
-            return response.send();
-        }
-
-        //получение информации о тарифе
-        const offerSub = await SUB.FIND({sub_id: lastOffer[0].sub_id}, true);
-
-        //название пользователя
-        const username = `${lastOffer[0].sub_id}_${lastOffer[0].offer_id}`;
-
-        //информация о заказе в системе Marzban
-        const marzbanInfo = await MarzbanAPI.GET_USER(username); 
-
-        //формирование ответа
-        const offerInfo = {
-            subName: offerSub.title,
-            subDataGBLimit: offerSub.data_limit,
-            usedGBtraffic: marzbanInfo.used_traffic / 1024**3,
-            subDateLimit: new Time(offerSub.date_limit).fromUnix(true),
-            createdDate: new Time(lastOffer[0].create_date).fromUnix(true)
-        }
-
-        //ответ
-        response.body = offerInfo;
-        response.send();
-
-    }catch(err){
-        // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
-        if (err.response) {
-            const statusCode = err.response.status;
-            const errorMessage = err.response.data.detail;
-
-            //вывод ошибки в консоль
-            WriteInLogFile(new Error(`Marzban response: ${statusCode} ${errorMessage}`));
-
-            response.status(statusCode, errorMessage);
-            return response.send();
-        } 
-        //обработка ошибок базы данных
-        else if(err.message && err.message.indexOf('SQLITE') !== -1){
-            return databaseErrorHandler(err, response).send();
-
-        }
-        //остальные ошибки
-        else {
-            // Запрос был сделан, но ответа от сервера не было
-            err.message = err.message || 'Сервер Marzban не отвечает';
-
-            //вывод ошибки в консоль
-            WriteInLogFile(new Error(`Marzban sending response error: ${err.message}`));
-
-            response.status(500, err.message);
-            return response.send();
-        }
-    }
-})
 
 //Удаление данных (Крайне не рекомендуется использовать)
 app.delete('/delete', async (req, res) => {
@@ -676,21 +663,24 @@ async function confirmOffer(offerInfo, response){
             }
         };
 
-        //удаляем предыдущий заказ, если таковой имеется
-        const oldOffer = offerInfo._offer.offer_id - 1;
+        //ищем предыдущий заказ со строкой подключения
+        const oldOfferSqlQuery = `
+            SELECT * FROM offer
+            WHERE
+                offer_id < ${offerInfo._offer.offer_id}
+                AND user_id = ${users[i]}
+                AND conn_string IS NOT NULL
+            ORDER BY offer_id DESC
+            LIMIT 1`;
 
-        //если есть старый заказ в системе Marzban - то удаляем его.
-        if(oldOffer > 0){
+        //выполняем запрос в обход методов работы с таблицей заказов
+        const oldOffer = await db.executeWithReturning(oldOfferSqlQuery);
 
-            //ищем старый не истекший заказ
-            const oldOfferInf = await OFFER.FIND({offer_id: oldOffer, user_id: offerInfo._offer.user_id}, true);
-            const dateTimeNow = new Time().shortUnix();
-            
-            //удаляем старый заказ в систиме Marzban
-            if(oldOfferInf && oldOfferInf.end_time > dateTimeNow){
-                const oldOfferName = `${oldOfferInf.sub_id}_${oldOfferInf.offer_id}`;
-                await MarzbanAPI.DELETE_USER(oldOfferName);
-            }
+        //если заказ найден, то удоляем его в системе Marzban
+        if(oldOffer.length){
+            const oldOfferName = `${oldOffer[0].sub_id}_${oldOffer[0].offer_id}`;
+            await MarzbanAPI.DELETE_USER(oldOfferName);
+            await OFFER.UPDATE(oldOffer[0].offer_id, {conn_string: null});
         }
 
         // Создаем нового пользователя
@@ -739,7 +729,7 @@ async function confirmOffer(offerInfo, response){
         //и уведомление пользователя о одобрении заявки (бесплатная одобряется сразу)
 
         //отправка ответа
-        response.status(201, 'created');
+        response.status(200, 'Обновлено');
         response.body = responseData;
         return response.send();
     }
@@ -755,7 +745,7 @@ async function confirmOffer(offerInfo, response){
             //вывод ошибки в консоль
             WriteInLogFile(error);
 
-            response.status(statusCode, errorMessage);
+            response.status(statusCode, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         } 
         //обработка ошибок базы данных
@@ -774,7 +764,7 @@ async function confirmOffer(offerInfo, response){
             //вывод ошибки в консоль
             WriteInLogFile(error);
 
-            response.status(500, err.message);
+            response.status(500, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         }
     }
@@ -795,16 +785,16 @@ function databaseErrorHandler(err, response){
 
     // Обработка ограничений
     if(err.message.indexOf('SQLITE_CONSTRAINT') !== -1){
-        response.status(409, err.message);
+        response.status(409, 'Что-то пошло не так, попробуйте позже');
     }
     // Обработка ошибок синтаксиса
     else if (err.message.indexOf('SQLITE_ERROR') !== -1){
-        response.status(417, err.message);
+        response.status(417, 'Что-то пошло не так, попробуйте позже');
     }
     // Обработка критических ошибок
     else {
         WriteInLogFile(err);
-        response.status(500, err.message);
+        response.status(500, 'Что-то пошло не так, попробуйте позже');
     }
 
     return response;
