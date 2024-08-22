@@ -204,7 +204,7 @@ app.patch('/confirm', async (req, res) => {
 
         //если такой заявки нет
         if(!offerInfo){
-            response.status(404, `Заявка с offer_id: '${offerInfo.offer_id}' не найдена`);
+            response.status(404, `Заявка с offer_id: '${offer_id}' не найдена`);
             return response.send();
         }
 
