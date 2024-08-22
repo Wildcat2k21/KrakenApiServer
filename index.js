@@ -453,7 +453,7 @@ app.patch('/recreate', async (req, res) => {
             const errorMessage = err.response.data.detail.body;
 
             //вывод ошибки в консоль
-            WriteInLogFile(new Error(`Marzban response ${statusCode}: ${errorMessage}`));
+            WriteInLogFile(new Error(`Marzban response: ${statusCode} ${errorMessage}`));
 
             response.status(statusCode, errorMessage);
             return response.send();
@@ -528,7 +528,7 @@ app.get('/offer', async (req, res) => {
             const errorMessage = err.response.data.detail.body;
 
             //вывод ошибки в консоль
-            WriteInLogFile(new Error(`Marzban response ${statusCode}: ${errorMessage}`));
+            WriteInLogFile(new Error(`Marzban response: ${statusCode} ${errorMessage}`));
 
             response.status(statusCode, errorMessage);
             return response.send();
@@ -753,7 +753,7 @@ async function confirmOffer(offerInfo, response){
             const errorMessage = err.message || err.response.data.detail.body;
 
             // Ошибка при обращении к серверу
-            const error = new Error(`Marzban response ${statusCode}: ${errorMessage}`);
+            const error = new Error(`Marzban response: ${statusCode} ${errorMessage}`);
 
             //вывод ошибки в консоль
             WriteInLogFile(error);

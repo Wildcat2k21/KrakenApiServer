@@ -95,11 +95,11 @@ class AutoClearMarzbanExcitedOffers{
                     const statusCode = err.response.status;
                     const errorMessage = err.response.data.detail.body;
     
-                    WriteInLogFile(new Error(`Marzban response ${statusCode}: ${errorMessage}`));
+                    WriteInLogFile(new Error(`Не удалось удалить заказ Marzban: ${statusCode} ${errorMessage}`));
                 }
                 else {
                     // Запрос был сделан, но ответа от сервера не было
-                    err.message = err.message || 'Сервер Marzban не отвечает';
+                    err.message = 'Не удалось удалить заказ Marzban: ' += (err.message || 'Сервер Marzban не отвечает');
 
                     WriteInLogFile(err);
                 }
