@@ -446,7 +446,16 @@ app.patch('/recreate', async (req, res) => {
     try{
         //получение последних заказов
         for(let i = 0; i < users.length; i++){
-            const allSelectedUsersSql = `SELECT * FROM offer WHERE user_id = ${users[i]} AND end_time > ${dateTimeNow} ORDER BY offer_id DESC LIMIT 1`;
+            const allSelectedUsersSql = `
+                SELECT * FROM offer
+                    WHERE
+                    user_id = ${users[i]}
+                    AND end_time > ${dateTimeNow}
+                    AND conn_string IS NOT NULL
+                ORDER BY offer_id DESC
+                LIMIT 1
+            `;
+
             const offerForUser = await db.executeWithReturning(allSelectedUsersSql);
             
             //получение информации о заказе
@@ -671,7 +680,8 @@ async function confirmOffer(offerInfo, response){
                 AND user_id = ${users[i]}
                 AND conn_string IS NOT NULL
             ORDER BY offer_id DESC
-            LIMIT 1`;
+            LIMIT 1
+        `;
 
         //выполняем запрос в обход методов работы с таблицей заказов
         const oldOffer = await db.executeWithReturning(oldOfferSqlQuery);
