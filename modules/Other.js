@@ -67,24 +67,24 @@ class AutoClearMarzbanExcitedOffers{
         else WriteInLogFile(`Для заказа №${offer_id} мониторинг не был установлен ранее`);
     }
 
-    static track(offerInfo){
+    static track(offer){
         
         //получение времени
         const timeNow = Math.ceil(Date.now() / 1000);
-        const endTime = offerInfo.end_time;
+        const endTime = offer.end_time;
         const timeout = endTime - timeNow;
 
         //проверка на истечение времени (Не может работать для нового заказа)
         if(timeout < 0) return;
 
         //запуск таймера
-        offerInfo['_timeout'] = timeout;
-        offerInfo['_timeout_id'] = setTimeout(async () => {
-            const username = `${offerInfo.sub_id}_${offerInfo.offer_id}`;
+        offer['_timeout'] = timeout;
+        offer['_timeout_id'] = setTimeout(async () => {
+            const username = `${offer.sub_id}_${offer.offer_id}`;
             try{
                 //очистка пользователя и удаление из стека
                 await MarzbanAPI.DELETE_USER(username);
-                AutoClearMarzbanExcitedOffers.stack = AutoClearMarzbanExcitedOffers.stack.filter((item) => item.offer_id !== offerInfo.offer_id);
+                AutoClearMarzbanExcitedOffers.stack = AutoClearMarzbanExcitedOffers.stack.filter((item) => item.offer_id !== offer.offer_id);
                 
                 WriteInLogFile(`Удален истекший заказ Marzban: ${username}`);
             }
@@ -107,8 +107,8 @@ class AutoClearMarzbanExcitedOffers{
         }, timeout);
 
         //добавление в стек
-        AutoClearMarzbanExcitedOffers.stack.push(offerInfo);
-        WriteInLogFile(`Мониторинг заказа Marzban №${offer_id}. Заказ будет удален в системе: ${new Time(endTime).fromUnix(true)}`);
+        AutoClearMarzbanExcitedOffers.stack.push(offer);
+        WriteInLogFile(`Мониторинг заказа Marzban №${offer.offer_id}. Заказ будет удален в системе: ${new Time(endTime).fromUnix(true)}`);
     }
 }
 
