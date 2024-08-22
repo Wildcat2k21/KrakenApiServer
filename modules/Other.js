@@ -101,7 +101,7 @@ class AutoClearMarzbanExcitedOffers{
                 }
                 else {
                     // Запрос был сделан, но ответа от сервера не было
-                    err.message = 'Не удалось удалить заказ Marzban: ' + (err.message || 'Сервер Marzban не отвечает');
+                    err.message = 'Запланированое удаление заказа Marzban: ' + (err.message || 'Сервер Marzban не отвечает');
 
                     WriteInLogFile(err);
                 }
