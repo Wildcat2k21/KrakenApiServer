@@ -72,7 +72,7 @@ class AutoClearMarzbanExcitedOffers{
         //получение времени
         const timeNow = Math.ceil(Date.now() / 1000);
         const endTime = offer.end_time;
-        const timeout = endTime - timeNow;
+        const timeout = 5000//(endTime - timeNow) * 1000;
 
         //проверка на истечение времени (Не может работать для нового заказа)
         if(timeout < 0) return;
@@ -94,7 +94,9 @@ class AutoClearMarzbanExcitedOffers{
                 if (err.response) {
                     const statusCode = err.response.status;
                     const errorMessage = err.response.data.detail.body;
-    
+                    
+                    console.log(err.response.data);
+
                     WriteInLogFile(new Error(`Не удалось удалить заказ Marzban: ${statusCode} ${errorMessage}`));
                 }
                 else {
