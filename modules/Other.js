@@ -60,11 +60,11 @@ class AutoClearMarzbanExcitedOffers{
 
         //удаление из стека
         if(thisOffer) {
-            WriteInLogFile(`Отменен мониторинг для заказа ${offer_id}`);
+            WriteInLogFile(`Отменен мониторинг для заказа ${offer_id} 👌`);
             clearTimeout(thisOffer._timeout_id);
             AutoClearMarzbanExcitedOffers.stack = AutoClearMarzbanExcitedOffers.stack.filter((item) => item.offer_id !== offer_id);
         }
-        else WriteInLogFile(`Для заказа №${offer_id} мониторинг не был установлен ранее`);
+        else WriteInLogFile(`Для заказа №${offer_id} мониторинг не был установлен ранее 🔭`);
     }
 
     static track(offer){
@@ -86,7 +86,7 @@ class AutoClearMarzbanExcitedOffers{
                 await MarzbanAPI.DELETE_USER(username);
                 AutoClearMarzbanExcitedOffers.stack = AutoClearMarzbanExcitedOffers.stack.filter((item) => item.offer_id !== offer.offer_id);
                 
-                WriteInLogFile(`Удален истекший заказ Marzban: ${username}`);
+                WriteInLogFile(`Удален истекший заказ Marzban: ${username} ⌛`);
             }
             catch(err){
 
@@ -108,7 +108,7 @@ class AutoClearMarzbanExcitedOffers{
 
         //добавление в стек
         AutoClearMarzbanExcitedOffers.stack.push(offer);
-        WriteInLogFile(`Мониторинг заказа Marzban №${offer.offer_id}. Заказ будет удален в системе: ${new Time(endTime).fromUnix(true)}`);
+        WriteInLogFile(`Мониторинг заказа Marzban №${offer.offer_id}. Заказ будет удален в системе: ${new Time(endTime).fromUnix(true)} 🕓`);
     }
 }
 

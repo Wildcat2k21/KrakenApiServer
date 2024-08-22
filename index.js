@@ -795,12 +795,13 @@ async function initConnection(){
         const offers = await OFFER.FIND({});
 
         if(offers.length){
-            WriteInLogFile(`Мониторинг количества заказов: ${offers.length}`);
+            WriteInLogFile(`Мониторинг количества заказов 🔍: ${offers.length}`);
+            //запуск мониторинга
+            offers.forEach(offer => {
+                AutoClearMarzbanExcitedOffers.track(offer);
+            });
         }
-        
-        offers.forEach(offer => {
-            AutoClearMarzbanExcitedOffers.track(offer);
-        });
+        else WriteInLogFile('Нет действительных заказов для мониторинга ✔️');
     }
     catch(err){
         WriteInLogFile(err);
