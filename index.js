@@ -360,6 +360,7 @@ app.patch('/update', async (req, res) => {
 })
 
 //пересоздание заявок (в случае сбоя или по иным причинам)
+//УСТАНОВИТЬ В ДАЛЬНЕЙШЕМ ОГРАНИЧЕНИЕ НА ОБРАЩЕНИЕ РАЗ В 1 ДЕНЬ
 app.patch('/recreate', async (req, res) => {
 
     const response = new Response(res);
