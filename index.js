@@ -450,7 +450,7 @@ app.patch('/recreate', async (req, res) => {
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
-            const errorMessage = err.response.data.detail.body;
+            const errorMessage = err.response.data.detail;
 
             //вывод ошибки в консоль
             WriteInLogFile(new Error(`Marzban response: ${statusCode} ${errorMessage}`));
@@ -525,7 +525,7 @@ app.get('/offer', async (req, res) => {
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
-            const errorMessage = err.response.data.detail.body;
+            const errorMessage = err.response.data.detail;
 
             //вывод ошибки в консоль
             WriteInLogFile(new Error(`Marzban response: ${statusCode} ${errorMessage}`));
@@ -750,7 +750,7 @@ async function confirmOffer(offerInfo, response){
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
-            const errorMessage = err.message || err.response.data.detail.body;
+            const errorMessage = err.message || err.response.data.detail;
 
             // Ошибка при обращении к серверу
             const error = new Error(`Marzban response: ${statusCode} ${errorMessage}`);

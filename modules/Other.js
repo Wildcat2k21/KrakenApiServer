@@ -93,9 +93,7 @@ class AutoClearMarzbanExcitedOffers{
                 // Ошибка при обращении к серверу
                 if (err.response) {
                     const statusCode = err.response.status;
-                    const errorMessage = err.response.data.detail.body;
-                    
-                    console.log(err.response.data);
+                    const errorMessage = err.response.data.detail;
 
                     WriteInLogFile(new Error(`Не удалось удалить заказ Marzban: ${statusCode} ${errorMessage}`));
                 }
