@@ -63,9 +63,6 @@ function checkConfigFields(data){
         },
         "invite_discount": {
             type: 'number'
-        },
-        "autoclear_excited_offers" : {
-            type: 'number'
         }
     }
 

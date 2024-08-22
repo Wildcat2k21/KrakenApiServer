@@ -779,11 +779,6 @@ async function confirmOffer(offerInfo, response){
 async function initConnection(){ 
     try{
         await db.connect(`${DATABASE}.db`, 'init.sql');
-
-        //восстановление мониторинга
-        if(!config.autoclear_excited_offers) return;
-
-        //автоматическое восстановление мониторинга заказав
     }
     catch(err){
         WriteInLogFile(err);
