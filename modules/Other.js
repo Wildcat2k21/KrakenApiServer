@@ -54,7 +54,7 @@ class AutoClearMarzbanExcitedOffers{
     //Однако имя заказа и дату истечения класс всегда должен держать верную
 
     //очистка стека 
-    static async removeTrack(offer_id){
+    static removeTrack(offer_id){
         //очистка таймаута
         const thisOffer = AutoClearMarzbanExcitedOffers.stack.find(item => item.offer_id === offer_id);
 
@@ -67,7 +67,7 @@ class AutoClearMarzbanExcitedOffers{
         else WriteInLogFile(`Для заказа №${offer_id} мониторинг не был установлен ранее`);
     }
 
-    static async track(offerInfo){
+    static track(offerInfo){
         
         //получение времени
         const timeNow = Date.now();
