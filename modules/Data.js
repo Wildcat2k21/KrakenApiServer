@@ -63,6 +63,12 @@ function checkConfigFields(data){
         },
         "invite_discount": {
             type: 'number'
+        },
+        "accept_new_offers" : {
+            type: 'number'
+        },
+        "new_offers_limis_message": {
+            type: 'string'
         }
     }
 
