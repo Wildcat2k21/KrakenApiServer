@@ -70,7 +70,7 @@ class AutoClearMarzbanExcitedOffers{
     static async track(offerInfo){
         
         //получение времени
-        const timeNow = new Date.now();
+        const timeNow = Date.now();
         const endTime = new offerInfo.end_time;
         const timeout = endTime - timeNow;
 
