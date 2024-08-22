@@ -436,6 +436,8 @@ app.patch('/recreate', async (req, res) => {
             //создание новвой заявки с тем же именем
             const requestData = await MarzbanAPI.CREATE_USER(userData);
 
+            //тут уведомление о пересоздании заявки для пользователя
+            
             //обновление строки подключения в заказе
             await OFFER.UPDATE(usersOffers[i].offer_id, {conn_string:  requestData.links[0]});
         }
@@ -474,7 +476,82 @@ app.patch('/recreate', async (req, res) => {
     }
 });
 
-//обновление данных
+//получение информации о заказе
+app.get('/offer', async (req, res) => {
+    const response = new Response(res);
+    const telegram_id = req.query.telegram_id;
+
+    //проверка входных данных
+    if(typeof telegram_id !== 'number'){
+        response.status(417, 'Не передан telegram_id');
+        return response.send();
+    }
+
+    //получение информации о заказе
+    try{
+        const offerSql = `SELECT * FROM offer WHERE user_id = ${users[i]} ORDER BY offer_id DESC LIMIT 1`;
+        const lastOffer = await db.executeWithReturning(offerSql);
+        
+        //информировать об отсутстви действительных заявок для пользователей
+        if(!lastOffer.length) {
+            response.status(404, 'Нет действительных заявок');
+            return response.send();
+        }
+
+        //получение информации о тарифе
+        const offerSub = await SUB.FIND({sub_id: lastOffer[0].sub_id}, true);
+
+        //название пользователя
+        const username = `${lastOffer[0].sub_id}_${lastOffer[0].offer_id}`;
+
+        //информация о заказе в системе Marzban
+        const marzbanInfo = await MarzbanAPI.GET_USER(username); 
+
+        //формирование ответа
+        const offerInfo = {
+            subName: offerSub.title,
+            subDataGBLimit: offerSub.data_limit,
+            usedGBtraffic: marzbanInfo.used_traffic / 1024**3,
+            subDateLimit: new Time(offerSub.date_limit).fromUnix(true),
+            createdDate: new Time(lastOffer[0].create_date).fromUnix(true)
+        }
+
+        //ответ
+        response.body = offerInfo;
+        response.send();
+
+    }catch(err){
+        // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
+        if (err.response) {
+            const statusCode = err.response.status;
+            const errorMessage = err.response.data.detail.body;
+
+            //вывод ошибки в консоль
+            WriteInLogFile(new Error(`Marzban response ${statusCode}: ${errorMessage}`));
+
+            response.status(statusCode, errorMessage);
+            return response.send();
+        } 
+        //обработка ошибок базы данных
+        else if(err.message && err.message.indexOf('SQLITE') !== -1){
+            return databaseErrorHandler(err, response).send();
+
+        }
+        //остальные ошибки
+        else {
+            // Запрос был сделан, но ответа от сервера не было
+            err.message = err.message || 'Сервер Marzban не отвечает';
+
+            //вывод ошибки в консоль
+            WriteInLogFile(new Error(`Marzban sending response error: ${err.message}`));
+
+            response.status(500, err.message);
+            return response.send();
+        }
+    }
+})
+
+//Удаление данных (Крайне не рекомендуется использовать)
 app.delete('/delete', async (req, res) => {
     const response = new Response(res);
 
