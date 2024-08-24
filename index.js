@@ -15,7 +15,7 @@ const {checkUserFields, checkOfferFields, checkConfigFields
 let config = require('./config.json');
 
 //основаная конфигурация
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 4015;
 const DATABASE = process.env.DATABASE_NAME;
 
 //экземпляр базы данных
@@ -206,10 +206,10 @@ app.post('/offer', async (req, res) => {
 //получение информации о заказе
 app.get('/offer', async (req, res) => {
     const response = new Response(res);
-    const telegram_id = req.query.telegram_id;
+    const telegram_id = Number(req.query.telegram_id);
 
     //проверка входных данных
-    if(typeof telegram_id !== 'number'){
+    if(typeof telegram_id !== 'number' && !isNaN(telegram_id)){
         response.status(417, 'Не передан telegram_id');
         return response.send();
     }
@@ -224,6 +224,9 @@ app.get('/offer', async (req, res) => {
             response.status(404, 'Нет действительных заявок');
             return response.send();
         }
+
+        //информация о пользователе
+        const user = await USER.FIND({telegram_id}, true);
 
         //получение информации о тарифе
         const offerSub = await SUB.FIND({sub_id: lastOffer[0].sub_id}, true);
@@ -240,7 +243,9 @@ app.get('/offer', async (req, res) => {
             subDataGBLimit: offerSub.data_limit,
             usedGBtraffic: marzbanInfo.used_traffic / 1024**3,
             subDateLimit: new Time(offerSub.date_limit).fromUnix(true),
-            createdDate: new Time(lastOffer[0].create_date).fromUnix(true)
+            createdDate: new Time(lastOffer[0].create_date).fromUnix(true),
+            inviteCode: user.invite_code,
+            connString: marzbanInfo.conn_string
         }
 
         //ответ
@@ -371,7 +376,7 @@ app.get('/data', async (req, res) => {
     const response = new Response(res);
 
     //параметры поиска
-    let {tableName, filters, limit} = req.body;
+    let {tableName, filters, limit} = req.query;
 
     //проверка входных данных
     if(!tableName){
