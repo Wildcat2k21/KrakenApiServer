@@ -388,7 +388,9 @@ app.get('/data', async (req, res) => {
     desc = (desc === 'true') ? true : false;
 
     try{
+        console.log(tableName, filters, limit, desc);
         const data = await db.find(tableName, filters, limit, desc);
+        console.log(data);
         response.body = data;
         response.send();
 
