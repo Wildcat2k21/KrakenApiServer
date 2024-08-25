@@ -83,7 +83,7 @@ class Database {
                       return `${field} ${param}`;
                   }
             
-                  const value = clearSqlQuery(param ? rawValue.slice(1) : rawValue);
+                  const value = param ? rawValue.slice(1) : rawValue;
                   return `${field} ${param ? param : '='} ${isNaN(value) ? `'${value}'` : `${value}`}`;
             })
             
