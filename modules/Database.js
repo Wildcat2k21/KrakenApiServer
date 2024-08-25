@@ -15,8 +15,8 @@ class Database {
             //значения полей для вствки
             const fields = Object.keys(params);
             const values = Object.values(params).map(field => {
-                if(typeof field === 'number') return field;
-                else return `'${field}'`;
+                const cleanValue = clearSqlQuery(field);
+                return (typeof cleanValue === 'number') ? cleanValue : `'${cleanValue}'`;
             });
 
             // Формирование запроса
@@ -35,13 +35,15 @@ class Database {
 
             // Значения для обновлений
             const updateParams = Object.keys(update).map(field => {
-                const convertedValue = typeof update[field] === 'number' ? update[field] : `'${update[field]}'`;
+                const cleanValue = clearSqlQuery(cleanValue);
+                const convertedValue = typeof cleanValue === 'number' ? cleanValue : `'${cleanValue}'`;
                 return `${field} = ${convertedValue}`;
             });
 
             // Значения условия
             const conditionParams = Object.keys(condition).map(field => {
-                const convertedValue = typeof condition[field] === 'number' ? condition[field] : `'${condition[field]}'`;
+                const cleanValue = clearSqlQuery(condition[field]);
+                const convertedValue = typeof cleanValue === 'number' ? cleanValue : `'${cleanValue}'`;
                 return `${field} = ${convertedValue}`;
             });
 
