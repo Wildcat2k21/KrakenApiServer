@@ -197,7 +197,7 @@ app.get('/offer', async (req, res) => {
 
     try{
         // Получение последнего заказа
-        const lastOffer = await OFFER.FIND({user_id: telegram_id, conn_string: '*'}, true, '!offer_id')
+        const lastOffer = await OFFER.FIND({user_id: telegram_id}, true, '!offer_id')
 
         // Проверка наличия действительных заявок
         if(!lastOffer){
