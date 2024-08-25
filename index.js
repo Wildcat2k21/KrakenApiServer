@@ -599,7 +599,7 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited, paymentC
     const promoData = promo || promoDbData;
     const userData = user || userDbData;
     const invitedData = invited || invitedDbData;
-    const offerData = offerOrId || offerDbData;
+    const offerData = offerDbData || offerOrId;
 
     // Расчет цены и скидки
     const {payment, discount} = paymentCalc || calcPriceAndDiscount(subData.price, userData.invite_count, promoData.discount);
