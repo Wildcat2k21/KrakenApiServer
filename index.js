@@ -261,7 +261,7 @@ app.get('/offer', async (req, res) => {
         response.body = {
             subName: offerSub.title,
             subDataGBLimit: marzbanInfo.data_limit / 1024**3,
-            usedTraffic: marzbanInfo.used_traffic / 1024**3,
+            usedTraffic: marzbanInfo.used_traffic,
             subDateLimit: new Time(marzbanInfo.expire).fromUnix(true),
             createdDate: new Time(lastVerifiedOffer[0].create_date).fromUnix(true),
             inviteCode: user.invite_code,
