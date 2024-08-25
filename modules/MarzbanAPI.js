@@ -47,6 +47,7 @@ password
     }
 
     static async GET_USER(user_id) {
+        try{
         const token = await MarzbanAPI.GET_AUTH_TOKEN();
         const response = axios.get(`http://5.35.84.41:8000/api/user/${user_id}/`, {
             "credentials": "include",
@@ -60,6 +61,9 @@ password
         });
 
         return response.data;
+    }   catch(err){
+            console.log('Axios govnoed', err.response.data);
+        }
     }
 
     static async DELETE_USER(user_id){
