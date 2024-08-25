@@ -216,7 +216,7 @@ app.get('/offer', async (req, res) => {
 
     //получение информации о заказе
     try{
-        const offerSql = `SELECT * FROM offer WHERE user_id = ${telegram_id} ORDER BY offer_id DESC LIMIT 1`;
+        const offerSql = `SELECT * FROM offer WHERE user_id = ${telegram_id} AND conn_string IS NOT NULL ORDER BY offer_id DESC LIMIT 1`;
         const lastOffer = await db.executeWithReturning(offerSql);
         
         //информировать об отсутстви действительных заявок для пользователей
