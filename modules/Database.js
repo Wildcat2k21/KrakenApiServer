@@ -34,19 +34,19 @@ class Database {
         return new Promise((resolve, reject) => {
 
             //значения для обновлений
-            const update_params = Object.keys(update).map(field => {
+            const updateParams = Object.keys(update).map(field => {
                 const convertedValue = typeof update[field] === 'number' ? update[field] : `'${update[field]}'`;
                 return `${field} = ${convertedValue}`;
             });
 
             //значения условия
-            const condition_params = Object.keys(condition).map(field => {
+            const conditionParams = Object.keys(condition).map(field => {
                 const convertedValue = typeof condition[field] === 'number' ? condition[field] : `'${condition[field]}'`;
                 return `${field} = ${convertedValue}`;
             });
 
             //формирование запроса
-            const sql = `UPDATE ${tableName} SET ${update_params.join(', ')} WHERE ${condition_params.join(' AND ')}`;
+            const sql = `UPDATE ${tableName} SET ${updateParams.join(', ')} WHERE ${conditionParams.join(' AND ')}`;
 
             // Выполнение запроса
             this.executeNoDataReturning(sql).then(result => resolve(result)).catch(err => reject(err));
@@ -57,13 +57,13 @@ class Database {
     async delete(tableName, condition){
         return new Promise((resolve, reject) => {
             //значения условия
-            const condition_params = Object.keys(condition).map(field => {
+            const conditionParams = Object.keys(condition).map(field => {
                 const convertedValue = typeof condition[field] === 'number' ? condition[field] : `'${condition[field]}'`;
                 return `${field} = ${convertedValue}`;
             });
             
             //формирование запроса
-            const sql = `DELETE FROM ${tableName} WHERE ${condition_params.join(' AND ')}`;
+            const sql = `DELETE FROM ${tableName} WHERE ${conditionParams.join(' AND ')}`;
 
             // Выполнение запроса
             this.executeNoDataReturning(sql).then(result => resolve(result)).catch(err => reject(err));
@@ -73,21 +73,36 @@ class Database {
     async find(tableName, params, limit, desc) {
         return new Promise((resolve, reject) => {
 
-            //значения полей для вствки
-            const sql_params = Object.keys(params).map(field => {
-                const convertedValue = typeof params[field] === 'number' ? params[field] : `'${params[field]}'`;
-                return `${field} = ${convertedValue}`;
-            })
+            const parameters = new Map([['!' , '!='], ['<' , '<'], ['>' , '>'], ['#', 'IS NULL'], ['*', 'IS NOT NULL']]);
 
+            //значения полей для вствки
+            const sqlParams = Object.keys(params).map(field => {
+                  const rawValue = params[field].toString();
+                  const param = parameters.get(rawValue.charAt(0));
+                  if(param === 'IS NULL' || param === 'IS NOT NULL'){
+                      return `${field} ${param}`;
+                  }
+            
+                  const value = param ? rawValue.slice(1) : rawValue;
+                  return `${field} ${param ? param : '='} ${isNaN(value) ? `'${value}'` : `${value}`}`;
+            })
+            
             //установка ограничения
             const limitClause = limit ? ` LIMIT ${Number(limit)}` : '';
 
             //сортировка
-            const orderClause = desc ? ` ORDER BY DESC` : '';
+            let orderClause = '';
 
+            //порядок сортировки
+            if(typeof desc === 'string' && desc.length){
+                isNegative = desc.charAt(0) === '!';
+                const sortField = isNegative ? desc.slice(1) : desc;
+                orderClause = ` ORDER BY ${sortField}${isNegative ? ' DESC' : ' ASC'}`;
+            }
+            
             //установка условия
-            const condition = (sql_params.length) ? ` WHERE ${sql_params.join(' AND ')}` : '';
-
+            const condition = (sqlParams.length) ? ` WHERE ${sqlParams.join(' AND ')}` : '';
+            
             //формирование запроса
             const sql = `SELECT * FROM ${tableName}${condition}${orderClause}${limitClause}`;
 

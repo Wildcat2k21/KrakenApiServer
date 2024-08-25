@@ -6,7 +6,7 @@ const express = require('express');
 require('dotenv').config();
 const fs = require('fs');
 
-//пользовательские модули
+// Пользовательские модули
 const {Time, WriteInLogFile} = require('./modules/Other.js');
 const {checkUserFields, checkOfferFields, checkConfigFields
 } = require('./modules/Data.js');
@@ -44,35 +44,30 @@ app.post('/user', async (req, res) => {
     const response = new Response(res);
     const body = req.body;
 
-    // Проверка количества пользователей
     try{
         const totalParticipants = await USER.COUNT();
         if(totalParticipants >= config.total_participants_limit){
             response.status(403, 'Достигнут лимит пользователей');
             return response.send();
         }
-    }
-    catch(err){
-        return databaseErrorHandler(err, response).send();
-    }
 
-    // Проверка на поля пользователя
-    try{
+        // Проверка на поля пользователя
         checkUserFields(body);
-    }
-    // 417 статус для ошибок ввода
-    catch(err){
-        response.status(417, err.message);
-        return response.send();
-    }
 
-    // Выполнение опреации вставки
-    try{
+        // Создание нового пользователя
         await USER.NEW(body);
+
         response.status(201, 'Создано')
-        return response.send();
+        response.send();
     }
     catch(err){
+
+        // Ошибки формата данных для пользователя
+        if(err.dataCheck){
+            response.status(417, err.message);
+            return response.send();
+        }
+
         return databaseErrorHandler(err, response).send();
     }
 });
@@ -81,6 +76,7 @@ app.post('/user', async (req, res) => {
 app.post('/offer', async (req, res) => {
 
     const response = new Response(res);
+    const body = req.body;
 
     //проверка разрешения новых заказов
     if(!config.accept_new_offers){
@@ -88,27 +84,17 @@ app.post('/offer', async (req, res) => {
         return response.send();
     }
 
-    const body = req.body;
-    
-    //идентификатор заказа
-    let offer_promo, offer_user, offer_id, offer_sub, invited_by, paymentCalc;
+    // Подписки заказы и т.д
+    let offer_promo, offer_user, offer_id,offer_sub, invited_by, paymentCalc;
 
-    // Проверка на поля заказа
     try{
+        // Проверка на поля заказа
         checkOfferFields(body);
-    }
-    catch(err){
-        response.status(417, err.message);
-        return response.send();
-    }
 
-    // Добавление нового заказа
-    try{
-
-        //поиск такой подписки
+        // Поиск такой подписки
         offer_sub = await SUB.FIND({name_id: body.sub_id}, true);
 
-        //поиск отметки на первый заказ
+        // Поиск отметки на первый заказ
         offer_user = await USER.FIND({telegram_id: body.user_id}, true);
 
         if(!offer_user){
@@ -121,62 +107,56 @@ app.post('/offer', async (req, res) => {
             return response.send();
         }
 
-        //проверка бесплатной подписки на первый заказ
+        // Проверка бесплатной подписки на первый заказ
         if(body.sub_id === 'free' && offer_user.free_trial_used){
-            //отказ пользователю в бесплатной подписке если заказ не первый
+            // Отказ пользователю в бесплатной подписке если заказ не первый
             response.status(403, 'Пробная подписка доступна только на первый заказ');
             return response.send();
         }
 
-        //если промокод не передан - применяется промокод по умолчанию
+        // Если промокод не передан - применяется промокод по умолчанию
         if(!body.promo_id){
             offer_promo = await PROMO.FIND({name_id: 'default'}, true);
         }
         else {
-            //проверка на пользовательский промокод
+            // Проверка на пользовательский промокод
             invited_by = await USER.FIND({invite_code: body.promo_id}, true);
 
-            //выставление промокодов
+            // Проверка, что пользователь был приглашен
             if(invited_by){
                 offer_promo = await PROMO.FIND({name_id: 'friend'}, true);
-                //вынесение кода приглашения в отдельное поле
                 body.invite_code = body.promo_id;
+
             }
+            // Игнорировать скрытый промокод
             else if(body.promo_id !== 'friend'){
                 offer_promo = await PROMO.FIND({name_id: body.promo_id}, true);
             }
             else {}
 
-            //проверка существования промокода
+            // Проверка существования промокода
             if(!offer_promo){
                 response.status(404, `Промокод '${body.promo_id}' не найден`);
                 return response.send();
             }
         }
 
-        //подмена промокода
+        // Подмена промокода
         body.promo_id = offer_promo.name_id;
 
-        //время окончания подписки
+        // Время окончания подписки
         body.end_time = new Time().addTime(offer_sub.date_limit).shortUnix();
 
-        //создание нового заказа
+        // создание нового заказа
         paymentCalc = calcPriceAndDiscount(offer_sub.price, offer_user.invite_count, offer_promo.discount);
 
-        //создание нового заказа
+        // Создание нового заказа
         offer_id = await OFFER.NEW({...body, ...paymentCalc});
-        response.status(201, 'Создано');
-    }
-    catch(err){
-        return databaseErrorHandler(err, response).send();
-    }
 
-    //обрабатываем тип подписки
-    try{
-        //создание деталей подписки
+        // Создание деталей подписки
         const offerDetails = await createOfferDetails(offer_id, offer_sub, offer_promo, offer_user, invited_by, paymentCalc);
 
-        //проверка автооформление бесплатной подписки
+        // Проверка автооформление бесплатной подписки
         if(config.auto_accept_free_trial && body.sub_id === 'free'){
             //метод имеет внутрюю обработку ошибок и отправку запроса
             return await confirmOffer(offerDetails, response);
@@ -184,123 +164,109 @@ app.post('/offer', async (req, res) => {
 
         // --- сценарий для платных подписок ---
 
-        //удаление скрытых полей
+        // Удаление скрытых полей
         Object.keys(offerDetails).forEach(key => {
             if(key.startsWith('_')) delete offerDetails[key];
         });
 
-        //отправка ответа
+        // Отправка ответа
         response.body = offerDetails;
 
-        //отправка ответа
+        // Отправка ответа
+        response.status(201, 'Создано');
         response.send();
 
-    }catch(err){
+    }
+    catch(err){
         return databaseErrorHandler(err, response).send();
     }
 });
 
-//получение информации о заказе
+// Получение информации о заказе
 app.get('/offer', async (req, res) => {
+
     const response = new Response(res);
     const telegram_id = Number(req.query.telegram_id);
 
-    //проверка входных данных
+    // Проверка входных данных
     if(typeof telegram_id !== 'number' || isNaN(telegram_id)){
         response.status(417, 'Не передан telegram_id');
         return response.send();
     }
 
-    //получение информации о заказе
     try{
-        const lastVerifiedOffer = await db.executeWithReturning(`SELECT * FROM offer WHERE user_id = ${telegram_id} AND conn_string IS NOT NULL ORDER BY offer_id DESC LIMIT 1`);
+        // Получение последнего заказа
+        const lastOffer = await OFFER.FIND({user_id: telegram_id, conn_string: '*'}, true, '!offer_id')
 
-        //информировать об отсутстви действительных заявок для пользователей
-        if(!lastVerifiedOffer.length) {
-
-            //поиск последней не подтвержденной заявки
-            const lastOffer = await db.executeWithReturning(`SELECT * FROM offer WHERE user_id = ${telegram_id} ORDER BY offer_id DESC LIMIT 1`);
-
-            //если заявка есть, отправить детали
-            if(lastOffer.length){
-
-                //получение подписки
-                const offerSub = await SUB.FIND({name_id: lastOffer[0].sub_id}, true);
-
-                //формирование ответа
-                response.body = {
-                    subName: offerSub.title,
-                    subDataGBLimit: offerSub.data_limit / 1024**3,
-                    subDateLimit: offerSub.date_limit
-                };
-
-                //отправка информации о заявке
-                return response.send();
-            }
-
+        // Проверка наличия действительных заявок
+        if(!lastOffer){
             response.status(404, 'Нет действительных заявок');
             return response.send();
         }
 
-        //информация о пользователе
+        // Получение информации о тарифе
+        const offerSub = await SUB.FIND({name_id: lastOffer.sub_id}, true);
+        
+        // Информация о подписке
+        const offerUser = {
+            subName: offerSub.title,
+            subDataGBLimit: offerSub.data_limit / 1024**3,
+            subDateLimit: offerSub.date_limit
+        };
+
+        // Обработка зкаказа как "Ожидающий"
+        if(!lastOffer.conn_string) {
+            response.body = offerUser;
+            return response.send();
+        }
+
+        // Информация о пользователе
         const user = await USER.FIND({telegram_id}, true);
 
-        //получение информации о тарифе
-        const offerSub = await SUB.FIND({name_id: lastVerifiedOffer[0].sub_id}, true);
+        // Название пользователя
+        const username = `${lastOffer.sub_id}_${lastOffer.offer_id}`;
 
-        //название пользователя
-        const username = `${lastVerifiedOffer[0].sub_id}_${lastVerifiedOffer[0].offer_id}`;
-
-        //информация о заказе в системе Marzban
+        // Информация о заказе в системе Marzban
         const marzbanInfo = await MarzbanAPI.GET_USER(username);
 
-        //формирование ответа
+        // Формирование ответа
         response.body = {
-            subName: offerSub.title,
-            subDataGBLimit: marzbanInfo.data_limit / 1024**3,
+            ...offerUser,
             usedTraffic: marzbanInfo.used_traffic,
             subDateLimit: new Time(marzbanInfo.expire).fromUnix(true),
-            createdDate: new Time(lastVerifiedOffer[0].create_date).fromUnix(true),
+            createdDate: new Time(lastOffer.create_date).fromUnix(true),
             inviteCode: user.invite_code,
             connString: marzbanInfo.links[0]
         };
 
-        //отправка ответа
         response.send();
 
-    }catch(err){
-
+    }
+    catch(err){
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
             const errorMessage = err.response.data.detail;
-
-            //вывод ошибки в консоль
             WriteInLogFile(new Error(`Marzban response: ${statusCode} ${errorMessage}`));
-
             response.status(statusCode, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         } 
-        //обработка ошибок базы данных
+        // Обработка ошибок базы данных
         else if(err.message && err.message.indexOf('SQLITE') !== -1){
             return databaseErrorHandler(err, response).send();
         }
-        //остальные ошибки
         else {
-            // Запрос был сделан, но ответа от сервера не было
             err.message = err.message || 'Сервер Marzban не отвечает';
-
-            //вывод ошибки в консоль
             WriteInLogFile(new Error(`Marzban sending response error: ${err.message}`));
-
             response.status(500, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         }
     }
 });
 
-//одобрение заказа
+// Одобрение заказа
 app.patch('/confirm', async (req, res) => {
+
     const response = new Response(res);
     const offer_id = req.body.offer_id;
 
@@ -310,25 +276,25 @@ app.patch('/confirm', async (req, res) => {
     }
 
     try{
-        //информация о заказе
+        // Информация о заказе
         const offerInfo = await OFFER.FIND({offer_id}, true);
 
-        //если такой заявки нет
+        // Если такой заявки нет
         if(!offerInfo){
             response.status(404, `Заявка не найдена`);
             return response.send();
         }
 
-        //проверка на одобрение заказа ранее
+        // Проверка на одобрение заказа ранее
         if(offerInfo.conn_string){
             response.status(409, 'Заявка уже одобрена');
             return response.send();
         }
 
-        //получение данных о заказе
+        // Получение данных о заказе
         const offerDetails = await createOfferDetails(offerInfo);
 
-        //метод имеет внутренюю обработку ошибок
+        // Метод имеет внутренюю обработку ошибок
         await confirmOffer(offerDetails, response);
 
     }catch(err){
@@ -341,7 +307,6 @@ app.post('/configure', (req, res) => {
 
     const response = new Response(res, 200, 'modified');
 
-    // Проверка корректности конфигурации
     try{
         checkConfigFields(req.body);
     }
@@ -372,56 +337,55 @@ app.get('/config', (req, res) => {
 
 //получение логов
 app.get('/logs', async (req, res) => {
+
     const response = new Response(res);
 
-    //reading logs and send
     try{
         response.body = await fs.readFileSync('logs.txt', 'utf8');
+        response.send();
     }
     catch(err){
         WriteInLogFile(err);
         response.status(500, 'Что-то пошло не так, попробуйте позже');
+        response.send();
     }
-
-    response.send();
 });
 
-//получение данных по фильтрам
+// получение данных по фильтрам
 app.get('/data', async (req, res) => {
 
     const response = new Response(res);
 
-    //параметры поиска
+    // Параметры поиска
     let {tableName, filters, limit, desc} = req.query;
 
-    //проверка входных данных
+    // Проверка входных данных
     if(!tableName){
         response.status(417, `Не передано название таблицы`);
         return response.send();
     }
 
-    //проверка входных данных
+    // Проверка входных данных
     if(filters === undefined || filters === null){
         filters = {};
     }
 
-    //проверка лимита
+    // Проверка лимита
     if(limit !== undefined && isNaN(limit)){
         response.status(417, `Указанный лимит имеет неверный формат`);
         return response.send();
     }
 
-    //проверка desc
+    // Проверка desc
     if(desc !== undefined && desc !== 'true' && desc !== 'false'){
         response.status(417, `Указанный порядок сортировки имеет неверный формат`);
         return response.send();
-        
     }
-
+    
+    // Преобразование входных данных
     limit = Number(limit);
     desc = (desc === 'true') ? true : false;
 
-    //поиск данных по параметрам
     try{
         const data = await db.find(tableName, filters, limit, desc);
         response.body = data;
@@ -433,33 +397,32 @@ app.get('/data', async (req, res) => {
     }
 });
 
-//обновление данных
+// Обновление данных
 app.patch('/update', async (req, res) => {
 
     const response = new Response(res);
 
-    //проверка входных данных
+    // Проверка входных данных
     let {tableName, update, condition} = req.body;
 
-    //проверка входных данных
+    // Проверка входных данных
     if(!tableName){
         response.status(417, `Не передано название таблицы`);
         return response.send();
     }
 
-    //проверка входных данных
+    // Проверка входных данных
     if(typeof update !== 'object' || !Object.keys(update).length){
         response.status(417, `Не переданы данные для обновления`);
         return response.send();
     }
 
-    //проверка входных данных
+    // Проверка входных данных
     if(typeof condition !== 'object' || !Object.keys(condition).length){
         response.status(417, `Не переданы условия обновления`);
         return response.send();
     }
 
-    //обновлене данных по параметрам
     try{
         await db.update(tableName, update, condition);
         response.send();
@@ -470,14 +433,14 @@ app.patch('/update', async (req, res) => {
     }
 })
 
-//пересоздание заявок (в случае сбоя или по иным причинам)
-//УСТАНОВИТЬ В ДАЛЬНЕЙШЕМ ОГРАНИЧЕНИЕ НА ОБРАЩЕНИЕ РАЗ В 1 ДЕНЬ
+// Пересоздание заявок (в случае сбоя или по иным причинам)
+// УСТАНОВИТЬ В ДАЛЬНЕЙШЕМ ОГРАНИЧЕНИЕ НА ОБРАЩЕНИЕ РАЗ В 1 ДЕНЬ
 app.patch('/recreate', async (req, res) => {
 
     const response = new Response(res);
     const users = req.body.users;
 
-    //проверка входных данных
+    // Проверка входных данных
     if(!users || !users instanceof Array || !users.length){
         response.status(417, `Пользователи для пересоздания не указаны`);
         return response.send();
@@ -486,42 +449,29 @@ app.patch('/recreate', async (req, res) => {
     const usersOffers = [];
     const dateTimeNow = new Time().shortUnix();
 
-    //поиск заказов
     try{
-        //получение последних заказов
+        // Получение последних заказов
         for(let i = 0; i < users.length; i++){
-            const allSelectedUsersSql = `
-                SELECT * FROM offer
-                    WHERE
-                    user_id = ${users[i]}
-                    AND end_time > ${dateTimeNow}
-                    AND conn_string IS NOT NULL
-                ORDER BY offer_id DESC
-                LIMIT 1
-            `;
-
-            const offerForUser = await db.executeWithReturning(allSelectedUsersSql);
+            const offerForUser = await OFFER.FIND({
+                user_id : users[i],
+                end_time : `>${dateTimeNow}`,
+                conn_string : '*'
+            }, true, '!offer_id');
             
-            //получение информации о заказе
-            if(offerForUser.length){
-                const offerSub = await SUB.FIND({name_id: offerForUser[0].sub_id}, true);
-                offerForUser[0].data_limit = offerSub.data_limit;
-                usersOffers.push(offerForUser[0]);
+            // Получение информации о заказе
+            if(offerForUser){
+                const offerSub = await SUB.FIND({name_id: offerForUser.sub_id}, true);
+                offerForUser.data_limit = offerSub.data_limit;
+                usersOffers.push(offerForUser);
             }
         }
 
-        //информировать об отсутстви действительных заявок для пользователей
+        // Информировать об отсутстви действительных заявок для пользователей
         if(!usersOffers.length){
             response.status(404, 'Нет действительных заявок');
             return response.send();
         }
 
-    }catch(err){
-        return databaseErrorHandler(err, response).send();
-    }
-
-    //удаление старых заявок и создание новых
-    try{
         //пересоздание заявок в Marzban
         for(let i = 0; i < usersOffers.length; i++){
 
@@ -565,58 +515,50 @@ app.patch('/recreate', async (req, res) => {
 
         response.status(200, `Пересоздано заявок: ${usersOffers.length}`);
         response.send();
-        
-    }catch(err){
+
+    }
+    catch(err){
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
             const errorMessage = err.response.data.detail;
-
-            //вывод ошибки в консоль
             WriteInLogFile(new Error(`Marzban response: ${statusCode} ${errorMessage}`));
-
             response.status(statusCode, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         } 
-        //обработка ошибок базы данных
+        // Обработка ошибок базы данных
         else if(err.message && err.message.indexOf('SQLITE') !== -1){
             return databaseErrorHandler(err, response).send();
-
         }
-        //остальные ошибки
+        // Остальные ошибки
         else {
-            // Запрос был сделан, но ответа от сервера не было
             err.message = err.message || 'Сервер Marzban не отвечает';
-
-            //вывод ошибки в консоль
             WriteInLogFile(new Error(`Marzban sending response error: ${err.message}`));
-
             response.status(500, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         }
     }
 });
 
-//Удаление данных (Крайне не рекомендуется использовать)
+// Удаление данных (Крайне не рекомендуется использовать)
 app.delete('/delete', async (req, res) => {
     const response = new Response(res);
 
-    //проверка входных данных
+    // Проверка входных данных
     let {tableName, condition} = req.body;
 
-    //проверка входных данных
+    // Проверка входных данных
     if(!tableName){
         response.status(417, `Не передано название таблицы`);
         return response.send();
     }
 
-    //проверка входных данных
+    // Проверка входных данных
     if(typeof condition !== 'object' || !Object.keys(condition).length){
         response.status(417, `Не переданы условия удаления`);
         return response.send();
     }
 
-    //удаление данных по параметрам
     try{
         await db.delete(tableName, condition);
         response.send();
@@ -626,42 +568,53 @@ app.delete('/delete', async (req, res) => {
     }
 });
 
-//генерация ответа для заказа пользователя
+// Генерация ответа для заказа пользователя
 async function createOfferDetails(offerOrId, sub, promo, user, invited, paymentCalc){
 
-    //проверка поля offer
+    let offerDbData, subDbData, promoDbData, userDbData, invitedDbData;
+
+    // Проверка поля offer
     if(typeof offerOrId === 'number'){
-        offerOrId = await OFFER.FIND({offer_id: offerOrId}, true);
+        offerDbData = await OFFER.FIND({offer_id: offerOrId}, true);
     }
-
-    //страя добрая дедовская проверка
+    
+    // Страя добрая дедовская проверка
     if(!sub){
-        sub = await SUB.FIND({name_id: offerOrId.sub_id}, true);
+        subDbData = await SUB.FIND({name_id: offerOrId.sub_id}, true);
     }
-    //страя добрая дедовская проверка
+    
+    // Страя добрая дедовская проверка
     if(!promo){
-        promo = await PROMO.FIND({name_id: offerOrId.promo_id}, true);
+        promoDbData = await PROMO.FIND({name_id: offerOrId.promo_id}, true);
     }
-    //страя добрая дедовская проверка
+    
+    // Страя добрая дедовская проверка
     if(!user){
-        user = await USER.FIND({telegram_id: offerOrId.user_id}, true);
+        userDbData = await USER.FIND({telegram_id: offerOrId.user_id}, true);
     }
 
-    //расчет цены и скидки
-    const {payment, discount} = paymentCalc || calcPriceAndDiscount(sub.price, user.invite_count, promo.discount);
+    // Вобор данных
+    const subData = sub || subDbData;
+    const promoData = promo || promoDbData;
+    const userData = user || userDbData;
+    const invitedData = invited || invitedDbData;
+    const offerData = offerOrId || offerDbData;
 
-    //информация для пользователя
+    // Расчет цены и скидки
+    const {payment, discount} = paymentCalc || calcPriceAndDiscount(subData.price, userData.invite_count, promoData.discount);
+
+    // Информация для пользователя
     const offerDetails = {
-        subname: sub.title,
-        price: sub.price,
+        subname: subData.title,
+        price: subData.price,
         toPay: payment,
         discount,
-        promoName: promo.title,
-        inviteCount: user.invite_count,
-        _offer: offerOrId,
-        _sub: sub,
-        _user: user,
-        _invitedBy: invited
+        promoName: promoData.title,
+        inviteCount: userData.invite_count,
+        _offer: offerData,
+        _sub: subData,
+        _user: userData,
+        _invitedBy: invitedData
     }
     
     return offerDetails;
@@ -669,33 +622,32 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited, paymentC
 
 function calcPriceAndDiscount(subPrice, invteCount, promoDiscount){
         
-    //скидки на оформление
+    // Скидки на оформление
     const promoPrice = subPrice * (1 - promoDiscount/100);
     const invitPrice = promoPrice * (1 - config.invite_discount/100 * invteCount);
     const priceToPay = Math.ceil(invitPrice);
 
-    //исключение отрицательной цены
+    // Исключение отрицательной цены
     const payment = (priceToPay < 0) ? 0 : priceToPay;
 
-    //скидка
+    // Скидка
     const discount = (subPrice) ? Math.ceil((subPrice - payment) / subPrice * 100) : 0;
     return {payment, discount};
 }
 
 async function confirmOffer(offerInfo, response){
 
-    //отметка одобрения заказа
     try{
-        //уникальный имена для тарифа
+        // Уникальный имена для тарифа
         const username = `${offerInfo._sub.name_id}_${offerInfo._offer.offer_id}`;
 
-        //установка даты окончания подписки
+        // Установка даты окончания подписки
         const expire = offerInfo._offer.end_time;
 
-        //лимит данных
+        // Лимит данных
         const data_limit = offerInfo._sub.data_limit * 1024**3;
 
-        //тут генерируем строку подключения и передаем ее пользователю
+        // Тут генерируем строку подключения и передаем ее пользователю
         const userData = {
             status: 'active',
             username, //имя тарифа
@@ -716,72 +668,65 @@ async function confirmOffer(offerInfo, response){
             }
         };
 
-        //ищем предыдущий заказ со строкой подключения
-        const oldOfferSqlQuery = `
-            SELECT * FROM offer
-            WHERE
-                offer_id < ${offerInfo._offer.offer_id}
-                AND user_id = ${offerInfo._user.telegram_id}
-                AND conn_string IS NOT NULL
-            ORDER BY offer_id DESC
-            LIMIT 1
-        `;
+        // Выполняем запрос в обход методов работы с таблицей заказов
+        const oldOffer = await OFFER.FIND({
+            offer_id: `<${offerInfo._offer.offer_id}`,
+            user_id: offerInfo._user.telegram_id,
+            conn_string: '*'
+        }, true, '!offer_id');
 
-        //выполняем запрос в обход методов работы с таблицей заказов
-        const oldOffer = await db.executeWithReturning(oldOfferSqlQuery);
-
-        //если заказ найден, то удоляем его в системе Marzban
-        if(oldOffer.length){
-            const oldOfferName = `${oldOffer[0].sub_id}_${oldOffer[0].offer_id}`;
+        // Если заказ найден, то удоляем его в системе Marzban
+        if(oldOffer){
+            const oldOfferName = `${oldOffer.sub_id}_${oldOffer.offer_id}`;
             await MarzbanAPI.DELETE_USER(oldOfferName);
-            await OFFER.UPDATE(oldOffer[0].offer_id, {conn_string: null});
+            await OFFER.UPDATE(oldOffer.offer_id, {conn_string: null});
         }
 
         // Создаем нового пользователя
         const requestData = await MarzbanAPI.CREATE_USER(userData);
 
-        //установка текста подписки пользователя и отметка что был заказ
+        // Установка текста подписки пользователя и отметка что был заказ
         await OFFER.UPDATE(offerInfo._offer.offer_id, {conn_string: requestData.links[0]});
         
-        //параметры для обновления пользователя
+        // Параметры для обновления пользователя
         let userUpdateOptions;
         
-        //если заказ был первый - отметить пользователя как использовавший бесплатную подписку
+        // Если заказ был первый - отметить пользователя как использовавший бесплатную подписку
         if(!offerInfo._user.free_trial_used) userUpdateOptions = {free_trial_used: 1};
 
-        //сброс счетчика приглашенных для пользователя при новым заказе
+        // Сброс счетчика приглашенных для пользователя при новым заказе
         if(offerInfo._user.invite_count){
             userUpdateOptions = {...userUpdateOptions, invite_count: 0};
         }
         
-        //обновление зависимостей для платного заказа
+        // Обновление зависимостей для платного заказа
         if(offerInfo._offer.sub_id !== 'free' && offerInfo._offer.promo_id === 'friend' && offerInfo._offer.invite_code) {
             //поиск пользователя с таким промокодом
             const invitePromoCodeOwner = offerInfo._invitedBy || await USER.FIND({invite_code: offerInfo._offer.invite_code}, true);
             await USER.INCREMENT_INVITE_COUNTER(invitePromoCodeOwner.telegram_id);
         }
 
-        //обновление пользователя
+        // Обновление пользователя
         if(userUpdateOptions) await USER.UPDATE(offerInfo._offer.user_id, userUpdateOptions);
 
-        //если подписка бесплатная, убрать информацию о скидке и к оплате
+        // Если подписка бесплатная, убрать информацию о скидке и к оплате
         if(offerInfo._offer.sub_id === 'free'){
             delete offerInfo.discount;
             delete offerInfo.price;
             delete offerInfo.inviteCount;
         }
 
-        //удаление скрытых полей
+        // Удаление скрытых полей
         Object.keys(offerInfo).forEach(key => {
             if(key.startsWith('_')) delete offerInfo[key];
         });
 
-        //тут уведомление о новой заявке (бесплатная платная для администратора)
-        //и уведомление пользователя о одобрении заявки (бесплатная одобряется сразу)
+        // Тут уведомление о новой заявке (бесплатная платная для администратора)
+        // И уведомление пользователя о одобрении заявки (бесплатная одобряется сразу)
 
-        //отправка ответа
+        // Отправка ответа
         response.status(200, 'Обновлено');
-        response.body = {...offerInfo, connection: requestData.links[0]};;
+        response.body = {...offerInfo, connection: requestData.links[0]};
         return response.send();
     }
     catch(err){
@@ -789,32 +734,20 @@ async function confirmOffer(offerInfo, response){
         if (err.response) {
             const statusCode = err.response.status;
             const errorMessage = err.message || err.response.data.detail;
-
-            // Ошибка при обращении к серверу
             const error = new Error(`Marzban response: ${statusCode} ${errorMessage}`);
-
-            //вывод ошибки в консоль
             WriteInLogFile(error);
-
             response.status(statusCode, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         } 
         //обработка ошибок базы данных
         else if(err.message && err.message.indexOf('SQLITE') !== -1){
             return databaseErrorHandler(err, response).send();
-
         }
         //остальные ошибки
         else {
-            // Запрос был сделан, но ответа от сервера не было
             err.message = err.message || 'Сервер Marzban не отвечает';
-
-            // Ошибка при обращении к серверу
             const error = new Error(`Marzban sending response error: ${err.message}`);
-
-            //вывод ошибки в консоль
             WriteInLogFile(error);
-
             response.status(500, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         }

@@ -89,21 +89,35 @@ function checkMiddleFunction(requedFields, data){
 
         //присвоение имени полю, если оно не передано
         options.name = options.name || keys[i];
-        if(!(keys[i] in data)) throw new Error(`Поле '${options.name}' не передано`);
+        if(!(keys[i] in data)){
+            const textInputError = new Error(`Поле '${options.name}' не передано`);
+            textInputError.dataCheck = true;
+            throw textInputError;
+        };
 
         //проверка типа полей, предпологается что тип по умолчанию string
         if((options.type || 'string') !== typeof currentDataValue) {
-            throw new Error(`Поле '${options.name}' имеет неверный формат`);
+            const textInputError = new Error(`Поле '${options.name}' имеет неверный формат`);
+            textInputError.dataCheck = true;
+            throw textInputError;
         }
     
         //проверка на максимульную длину поля
         if('max_length' in options){
-            if(currentDataValue.length > options.max_length) throw new Error(`Поле ${options.name} слишком длинное`);
+            if(currentDataValue.length > options.max_length){
+                const textInputError = new Error(`Поле ${options.name} слишком длинное`);
+                textInputError.dataCheck = true;
+                throw textInputError;
+            }
         }
 
         //проверка на соответствие длины поля
         if('length' in options){
-            if(currentDataValue.length !== options.length) throw new Error(`Поле ${options.name} имеет неправильную длину`);
+            if(currentDataValue.length !== options.length){
+                const textInputError = new Error(`Поле ${options.name} имеет неправильную длину`);
+                textInputError.dataCheck = true;
+                throw textInputError;
+            }
         }
     }
 }
