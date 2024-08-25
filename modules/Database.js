@@ -73,7 +73,7 @@ class Database {
     async find(tableName, params, limit, desc) {
         return new Promise((resolve, reject) => {
 
-            const parameters = new Map([['!' , '!='], ['<' , '<'], ['>' , '>'], ['#', 'IS NULL'], ['*', 'IS NOT NULL']]);
+            const parameters = new Map([['!' , '!='], ['<' , '<'], ['>' , '>'], ['~', 'IS NULL'], ['*', 'IS NOT NULL']]);
 
             // Значения полей для вствки
             const sqlParams = Object.keys(params).map(field => {
@@ -83,7 +83,7 @@ class Database {
                       return `${field} ${param}`;
                   }
             
-                  const value = param ? rawValue.slice(1) : rawValue;
+                  const value = clearSqlQuery(param ? rawValue.slice(1) : rawValue);
                   return `${field} ${param ? param : '='} ${isNaN(value) ? `'${value}'` : `${value}`}`;
             })
             
@@ -187,8 +187,8 @@ class Database {
 }
 
 //убрать специальные символы из полей
-function clearSqlQuery(){
-    return (sql) => sql.replace(/[^a-zA-Z0-9_@.]/g, '');
+function clearSqlQuery(sql){
+    return sql.replace(/[^a-zA-Z0-9_@#.]/g, '');
 }
 
 module.exports = Database;
