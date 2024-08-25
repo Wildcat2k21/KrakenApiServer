@@ -241,19 +241,19 @@ app.get('/offer', async (req, res) => {
 
         console.log(marzbanInfo);
 
-        // //формирование ответа
-        // const offerInfo = {
-        //     subName: offerSub.title,
-        //     subDataGBLimit: offerSub.data_limit,
-        //     usedGBtraffic: marzbanInfo.used_traffic / 1024**3,
-        //     subDateLimit: new Time(offerSub.date_limit).fromUnix(true),
-        //     createdDate: new Time(lastOffer[0].create_date).fromUnix(true),
-        //     inviteCode: user.invite_code,
-        //     connString: marzbanInfo.conn_string
-        // }
+        //формирование ответа
+        const offerInfo = {
+            subName: offerSub.title,
+            subDataGBLimit: marzbanInfo.data_limit / 1024**3,
+            usedGBtraffic: marzbanInfo.used_traffic / 1024**3,
+            subDateLimit: new Time(marzbanInfo.expire).fromUnix(true),
+            createdDate: new Time(lastOffer[0].create_date).fromUnix(true),
+            inviteCode: user.invite_code,
+            connString: marzbanInfo.links[0]
+        }
 
-        // //ответ
-        // response.body = offerInfo;
+        //ответ
+        response.body = offerInfo;
         response.send();
 
     }catch(err){
@@ -272,7 +272,6 @@ app.get('/offer', async (req, res) => {
         //обработка ошибок базы данных
         else if(err.message && err.message.indexOf('SQLITE') !== -1){
             return databaseErrorHandler(err, response).send();
-
         }
         //остальные ошибки
         else {
