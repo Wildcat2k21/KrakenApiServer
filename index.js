@@ -256,10 +256,6 @@ app.get('/offer', async (req, res) => {
 
     }catch(err){
 
-        console.log('Обработка ошибки: ', err.response.data);
-        response.status(404, 'blyat');
-        response.send();
-
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
