@@ -83,7 +83,7 @@ class Database {
                       return `${field} ${param}`;
                   }
             
-                  const value = param ? rawValue.slice(1) : rawValue;
+                  const value = clearSqlQuery(param ? rawValue.slice(1) : rawValue);
                   return `${field} ${param ? param : '='} ${isNaN(value) ? `'${value}'` : `${value}`}`;
             })
             
@@ -184,6 +184,11 @@ class Database {
             });
         }
     }
+}
+
+//убрать специальные символы из полей
+function clearSqlQuery(){
+    return (sql) => sql.replace(/[^a-zA-Z0-9_@.]/g, '');
 }
 
 module.exports = Database;
