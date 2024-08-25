@@ -1,5 +1,5 @@
 class Response {
-    // Первичная инициализация
+
     constructor(res, status = 200, message = 'ok', body = null) {
         this.res = res; // Сохраняем объект res
         this.status(status, message);
@@ -13,7 +13,7 @@ class Response {
         return this;
     }
 
-    //получения объекта ответа
+    // Получения объекта ответа
     toObject(){
         return {
             status: this._status,

@@ -7,7 +7,8 @@ require('dotenv').config();
 const fs = require('fs');
 
 // Пользовательские модули
-const {Time, WriteInLogFile} = require('./modules/Other.js');
+const Time = require('./modules/Time.js');
+const {WriteInLogFile} = require('./modules/Other.js');
 const {checkUserFields, checkOfferFields, checkConfigFields
 } = require('./modules/Data.js');
 

@@ -46,7 +46,7 @@ function checkOfferFields(data){
     checkMiddleFunction(requedFields, data);
 }
 
-//функция для проверка полей конфигурации
+// Функция для проверка полей конфигурации
 function checkConfigFields(data){
     const requedFields = {
         'auto_accept_free_trial': {
@@ -87,7 +87,7 @@ function checkMiddleFunction(requedFields, data){
         const options = requedFields[keys[i]];
         const currentDataValue = data[keys[i]];
 
-        //присвоение имени полю, если оно не передано
+        // Присвоение имени полю, если оно не передано
         options.name = options.name || keys[i];
         if(!(keys[i] in data)){
             const textInputError = new Error(`Поле '${options.name}' не передано`);
@@ -95,14 +95,14 @@ function checkMiddleFunction(requedFields, data){
             throw textInputError;
         };
 
-        //проверка типа полей, предпологается что тип по умолчанию string
+        // Проверка типа полей, предпологается что тип по умолчанию string
         if((options.type || 'string') !== typeof currentDataValue) {
             const textInputError = new Error(`Поле '${options.name}' имеет неверный формат`);
             textInputError.dataCheck = true;
             throw textInputError;
         }
     
-        //проверка на максимульную длину поля
+        // Проверка на максимульную длину поля
         if('max_length' in options){
             if(currentDataValue.length > options.max_length){
                 const textInputError = new Error(`Поле ${options.name} слишком длинное`);
@@ -111,7 +111,7 @@ function checkMiddleFunction(requedFields, data){
             }
         }
 
-        //проверка на соответствие длины поля
+        // Проверка на соответствие длины поля
         if('length' in options){
             if(currentDataValue.length !== options.length){
                 const textInputError = new Error(`Поле ${options.name} имеет неправильную длину`);

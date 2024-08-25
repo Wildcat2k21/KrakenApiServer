@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const {WriteInLogFile} = require('./Other');
 
-//модуль для работы с базой данных
+// Модуль для работы с базой данных
 class Database {
     constructor(dbFilePath) {
         this.dbFilePath = dbFilePath;
@@ -19,7 +19,7 @@ class Database {
                 else return `'${field}'`;
             });
 
-            //формирование запроса
+            // Формирование запроса
             const sql = `INSERT INTO ${tableName} (${fields.join(', ')}) VALUES (${values.join(', ')})`;
 
             // Выполнение запроса
@@ -29,23 +29,23 @@ class Database {
         });
     }
 
-    //обновление данных в таблице
+    // Обновление данных в таблице
     async update(tableName, update, condition){
         return new Promise((resolve, reject) => {
 
-            //значения для обновлений
+            // Значения для обновлений
             const updateParams = Object.keys(update).map(field => {
                 const convertedValue = typeof update[field] === 'number' ? update[field] : `'${update[field]}'`;
                 return `${field} = ${convertedValue}`;
             });
 
-            //значения условия
+            // Значения условия
             const conditionParams = Object.keys(condition).map(field => {
                 const convertedValue = typeof condition[field] === 'number' ? condition[field] : `'${condition[field]}'`;
                 return `${field} = ${convertedValue}`;
             });
 
-            //формирование запроса
+            // Формирование запроса
             const sql = `UPDATE ${tableName} SET ${updateParams.join(', ')} WHERE ${conditionParams.join(' AND ')}`;
 
             // Выполнение запроса
@@ -53,16 +53,16 @@ class Database {
         });
     }
 
-    //удаление записей из таблицы
+    // Удаление записей из таблицы
     async delete(tableName, condition){
         return new Promise((resolve, reject) => {
-            //значения условия
+            // Значения условия
             const conditionParams = Object.keys(condition).map(field => {
                 const convertedValue = typeof condition[field] === 'number' ? condition[field] : `'${condition[field]}'`;
                 return `${field} = ${convertedValue}`;
             });
             
-            //формирование запроса
+            // Формирование запроса
             const sql = `DELETE FROM ${tableName} WHERE ${conditionParams.join(' AND ')}`;
 
             // Выполнение запроса
@@ -75,7 +75,7 @@ class Database {
 
             const parameters = new Map([['!' , '!='], ['<' , '<'], ['>' , '>'], ['#', 'IS NULL'], ['*', 'IS NOT NULL']]);
 
-            //значения полей для вствки
+            // Значения полей для вствки
             const sqlParams = Object.keys(params).map(field => {
                   const rawValue = params[field].toString();
                   const param = parameters.get(rawValue.charAt(0));
@@ -87,40 +87,40 @@ class Database {
                   return `${field} ${param ? param : '='} ${isNaN(value) ? `'${value}'` : `${value}`}`;
             })
             
-            //установка ограничения
+            // Установка ограничения
             const limitClause = limit ? ` LIMIT ${Number(limit)}` : '';
 
-            //сортировка
+            // Сортировка
             let orderClause = '';
 
-            //порядок сортировки
+            // Порядок сортировки
             if(typeof desc === 'string' && desc.length){
                 isNegative = desc.charAt(0) === '!';
                 const sortField = isNegative ? desc.slice(1) : desc;
                 orderClause = ` ORDER BY ${sortField}${isNegative ? ' DESC' : ' ASC'}`;
             }
             
-            //установка условия
+            // Установка условия
             const condition = (sqlParams.length) ? ` WHERE ${sqlParams.join(' AND ')}` : '';
             
-            //формирование запроса
+            // Формирование запроса
             const sql = `SELECT * FROM ${tableName}${condition}${orderClause}${limitClause}`;
 
             // Выполнение запроса
             this.executeWithReturning(sql).then(result => {
-                //если возвращать только одну запись
+                // Если возвращать только одну запись
                 if((typeof limit === 'boolean' && limit) || limit === 1){
                     result = result[0];
                 }
 
                 resolve(result)
 
-            //обработка ошибок
+            // Обработка ошибок
             }).catch(err => reject(err));
         })
     }
 
-    //запрос без возвращаемого значения
+    // Запрос без возвращаемого значения
     async executeNoDataReturning(sql, returnId = false) {
         return new Promise((resolve, reject) => {
             this.db.run(sql, function(err) {
@@ -130,7 +130,7 @@ class Database {
         });
     }
 
-    //запрос с возвращаемым значением
+    // Запрос с возвращаемым значением
     async executeWithReturning(sql) {
         return new Promise((resolve, reject) => {
             this.db.all(sql, [], function(err, rows) {
@@ -146,16 +146,16 @@ class Database {
             this.db = new sqlite3.Database(this.dbFilePath, (err) => {
                 if (err) return reject(new Error(`Не удалось подключиться к базе данных: ${err.message}`));
 
-                //включение ограничений внешних ключей
+                // Включение ограничений внешних ключей
                 this.db.run('PRAGMA foreign_keys = ON', (err) => {
                     if (err) return reject(new Error(`Не удалось включить внешние ключи: ${err.message}`));
                 });
 
-                //логи и файл инициализации
+                // Ооги и файл инициализации
                 WriteInLogFile('База данных подключена⚡');
                 const sqlFile = path.resolve(sqlFilePath);
 
-                //проверка на существование не пустой базы данных
+                // Проверка на существование не пустой базы данных
                 if(fs.statSync(dbPath).size > 0) {
                     WriteInLogFile('Инициазация не трубется 👌');
                     return resolve();
