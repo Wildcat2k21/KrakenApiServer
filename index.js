@@ -388,7 +388,7 @@ app.get('/data', async (req, res) => {
     desc = (desc === 'true') ? true : false;
 
     try{
-        response.body = await db.find(tableName, filters, limit, desc) || null;
+        response.body = await db.find(tableName, filters, limit, desc) || 'Not found';
         response.send();
 
     }
