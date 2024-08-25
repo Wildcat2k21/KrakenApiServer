@@ -237,6 +237,7 @@ app.get('/offer', async (req, res) => {
             subDateLimit: new Time(marzbanInfo.expire).fromUnix(true),
             createdDate: new Time(lastOffer.create_date).fromUnix(true),
             inviteCode: user.invite_code,
+            price: offerSub.price,
             connString: marzbanInfo.links[0]
         };
 
