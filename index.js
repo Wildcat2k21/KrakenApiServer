@@ -229,7 +229,7 @@ app.get('/offer', async (req, res) => {
         const user = await USER.FIND({telegram_id}, true);
 
         //получение информации о тарифе
-        const offerSub = await SUB.FIND({sub_id: lastOffer[0].sub_id}, true);
+        const offerSub = await SUB.FIND({name_id: lastOffer[0].sub_id}, true);
 
         //название пользователя
         const username = `${lastOffer[0].sub_id}_${lastOffer[0].offer_id}`;
