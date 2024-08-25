@@ -234,12 +234,10 @@ app.get('/offer', async (req, res) => {
         //название пользователя
         const username = `${lastOffer[0].sub_id}_${lastOffer[0].offer_id}`;
 
-        console.log('Est govno ?');
+        //информация о заказе в системе Marzban
+        const marzbanInfo = await MarzbanAPI.GET_USER(username); 
 
-        // //информация о заказе в системе Marzban
-        // const marzbanInfo = await MarzbanAPI.GET_USER(username); 
-
-        // console.log(marzbanInfo);
+        console.log(marzbanInfo);
 
         // //формирование ответа
         // const offerInfo = {
@@ -257,6 +255,11 @@ app.get('/offer', async (req, res) => {
         response.send();
 
     }catch(err){
+
+        console.log('Обработка ошибки: ', err.response.data);
+        response.status(404, 'blyat');
+        response.send();
+
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
