@@ -1,0 +1,44 @@
+{
+  "proxies": {
+    "vless": {
+      "id": "13bacbe4-c332-4b08-930f-be7f0882963d",
+      "flow": "xtls-rprx-vision"
+    }
+  },
+  "expire": 1724101199,
+  "data_limit": 5368709120,
+  "data_limit_reset_strategy": "no_reset",
+  "inbounds": {
+    "vless": [
+      "VLESS TCP REALITY"
+    ]
+  },
+  "note": "",
+  "sub_updated_at": null,
+  "sub_last_user_agent": null,
+  "online_at": null,
+  "on_hold_expire_duration": null,
+  "on_hold_timeout": null,
+  "auto_delete_in_days": null,
+  "username": "test5",
+  "status": "active",
+  "used_traffic": 0,
+  "lifetime_used_traffic": 0,
+  "created_at": "2024-08-18T12:04:11.312156",
+  "links": [
+    "vless://13bacbe4-c332-4b08-930f-be7f0882963d@5.35.84.41:8443?security=reality&type=tcp&headerType=&flow=xtls-rprx-vision&path=&host=&sni=discordapp.com&fp=chrome&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&sid=#%F0%9F%9A%80%20Marz%20%28test5%29%20%5BVLESS%20-%20tcp%5D",
+    "False"
+  ],
+  "subscription_url": "/sub/dGVzdDUsMTcyMzk4MjY1Mg3V9mqm72FU",
+  "excluded_inbounds": {
+    "vless": [
+      "VLESS GRPC REALITY"
+    ]
+  },
+  "admin": {
+    "username": "admin9192",
+    "is_sudo": true,
+    "telegram_id": null,
+    "discord_webhook": null
+  }
+}

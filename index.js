@@ -216,11 +216,31 @@ app.get('/offer', async (req, res) => {
 
     //получение информации о заказе
     try{
-        const offerSql = `SELECT * FROM offer WHERE user_id = ${telegram_id} AND conn_string IS NOT NULL ORDER BY offer_id DESC LIMIT 1`;
-        const lastOffer = await db.executeWithReturning(offerSql);
-        
+        const lastVerifiedOffer = await db.executeWithReturning(`SELECT * FROM offer WHERE user_id = ${telegram_id} AND conn_string IS NOT NULL ORDER BY offer_id DESC LIMIT 1`);
+
         //информировать об отсутстви действительных заявок для пользователей
-        if(!lastOffer.length) {
+        if(!lastVerifiedOffer.length) {
+
+            //поиск последней не подтвержденной заявки
+            const lastOffer = await db.executeWithReturning(`SELECT * FROM offer WHERE user_id = ${telegram_id} ORDER BY offer_id DESC LIMIT 1`);
+
+            //если заявка есть, отправить детали
+            if(lastOffer.length){
+
+                //получение подписки
+                const offerSub = await SUB.FIND({name_id: lastOffer[0].sub_id}, true);
+
+                //формирование ответа
+                response.body = {
+                    subName: offerSub.title,
+                    subDataGBLimit: lastOffer.data_limit / 1024**3,
+                    subDateLimit: new Time(lastOffer.date_limit).fromUnix(true)
+                };
+
+                //отправка информации о заявке
+                return response.send();
+            }
+
             response.status(404, 'Нет действительных заявок');
             return response.send();
         }
@@ -229,10 +249,10 @@ app.get('/offer', async (req, res) => {
         const user = await USER.FIND({telegram_id}, true);
 
         //получение информации о тарифе
-        const offerSub = await SUB.FIND({name_id: lastOffer[0].sub_id}, true);
+        const offerSub = await SUB.FIND({name_id: lastVerifiedOffer[0].sub_id}, true);
 
         //название пользователя
-        const username = `${lastOffer[0].sub_id}_${lastOffer[0].offer_id}`;
+        const username = `${lastVerifiedOffer[0].sub_id}_${lastVerifiedOffer[0].offer_id}`;
 
         //информация о заказе в системе Marzban
         const marzbanInfo = await MarzbanAPI.GET_USER(username);
@@ -243,10 +263,10 @@ app.get('/offer', async (req, res) => {
             subDataGBLimit: marzbanInfo.data_limit / 1024**3,
             usedGBtraffic: marzbanInfo.used_traffic / 1024**3,
             subDateLimit: new Time(marzbanInfo.expire).fromUnix(true),
-            createdDate: new Time(lastOffer[0].create_date).fromUnix(true),
+            createdDate: new Time(lastVerifiedOffer[0].create_date).fromUnix(true),
             inviteCode: user.invite_code,
             connString: marzbanInfo.links[0]
-        }
+        };
 
         //отправка ответа
         response.send();
