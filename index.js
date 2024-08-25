@@ -234,10 +234,12 @@ app.get('/offer', async (req, res) => {
         //название пользователя
         const username = `${lastOffer[0].sub_id}_${lastOffer[0].offer_id}`;
 
-        //информация о заказе в системе Marzban
-        const marzbanInfo = await MarzbanAPI.GET_USER(username); 
+        console.log('Est govno ?');
 
-        console.log(marzbanInfo);
+        // //информация о заказе в системе Marzban
+        // const marzbanInfo = await MarzbanAPI.GET_USER(username); 
+
+        // console.log(marzbanInfo);
 
         // //формирование ответа
         // const offerInfo = {
