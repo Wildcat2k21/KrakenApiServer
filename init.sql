@@ -26,7 +26,8 @@ CREATE TABLE user (
     telegram TEXT NOT NULL CHECK(LENGTH(telegram) <= 32),
     free_trial_used INTEGER DEFAULT 0,
     invite_code TEXT NOT NULL CHECK(LENGTH(invite_code) = 4) UNIQUE,
-    invite_count INTEGER DEFAULT 0
+    invite_count INTEGER DEFAULT 0,
+    blocked INTEGER DEFAULT 0
 );
 
 -- Заказы

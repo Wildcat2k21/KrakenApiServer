@@ -163,9 +163,6 @@ app.post('/offer', async (req, res) => {
         //создание нового заказа
         paymentCalc = calcPriceAndDiscount(offer_sub.price, offer_user.invite_count, offer_promo.discount);
 
-        //установление порядкового номера заказа пользователя
-        // const priviousUserOffer = await OFFER.FIND({user_id: offer_user.user_id, user_offer_id}, true);
-
         //создание нового заказа
         offer_id = await OFFER.NEW({...body, ...paymentCalc});
         response.status(201, 'Создано');
@@ -395,7 +392,7 @@ app.get('/data', async (req, res) => {
     const response = new Response(res);
 
     //параметры поиска
-    let {tableName, filters, limit} = req.query;
+    let {tableName, filters, limit, desc} = req.query;
 
     //проверка входных данных
     if(!tableName){
@@ -408,9 +405,25 @@ app.get('/data', async (req, res) => {
         filters = {};
     }
 
+    //проверка лимита
+    if(limit !== undefined && isNaN(limit)){
+        response.status(417, `Указанный лимит имеет неверный формат`);
+        return response.send();
+    }
+
+    //проверка desc
+    if(desc !== undefined && desc !== 'true' && desc !== 'false'){
+        response.status(417, `Указанный порядок сортировки имеет неверный формат`);
+        return response.send();
+        
+    }
+
+    limit = Number(limit);
+    desc = (desc === 'true') ? true : false;
+
     //поиск данных по параметрам
     try{
-        const data = await db.find(tableName, filters, limit);
+        const data = await db.find(tableName, filters, limit, desc);
         response.body = data;
         response.send();
 
@@ -763,15 +776,12 @@ async function confirmOffer(offerInfo, response){
             if(key.startsWith('_')) delete offerInfo[key];
         });
 
-        // Ответ для сервера
-        const responseData = {...offerInfo, connection: requestData.links[0]};
-
         //тут уведомление о новой заявке (бесплатная платная для администратора)
         //и уведомление пользователя о одобрении заявки (бесплатная одобряется сразу)
 
         //отправка ответа
         response.status(200, 'Обновлено');
-        response.body = responseData;
+        response.body = {...offerInfo, connection: requestData.links[0]};;
         return response.send();
     }
     catch(err){
