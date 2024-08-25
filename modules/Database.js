@@ -95,7 +95,7 @@ class Database {
 
             // Порядок сортировки
             if(typeof desc === 'string' && desc.length){
-                isNegative = desc.charAt(0) === '!';
+                const isNegative = desc.charAt(0) === '!';
                 const sortField = isNegative ? desc.slice(1) : desc;
                 orderClause = ` ORDER BY ${sortField}${isNegative ? ' DESC' : ' ASC'}`;
             }
