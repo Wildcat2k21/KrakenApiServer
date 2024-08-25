@@ -209,7 +209,7 @@ app.get('/offer', async (req, res) => {
     const telegram_id = Number(req.query.telegram_id);
 
     //проверка входных данных
-    if(typeof telegram_id !== 'number' && !isNaN(telegram_id)){
+    if(typeof telegram_id !== 'number' || isNaN(telegram_id)){
         response.status(417, 'Не передан telegram_id');
         return response.send();
     }
@@ -815,10 +815,10 @@ function databaseErrorHandler(err, response){
     }
     // Обработка критических ошибок
     else {
-        WriteInLogFile(err);
         response.status(500, 'Что-то пошло не так, попробуйте позже');
     }
 
+    WriteInLogFile(err);
     return response;
 }
 
