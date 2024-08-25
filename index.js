@@ -233,8 +233,8 @@ app.get('/offer', async (req, res) => {
                 //формирование ответа
                 response.body = {
                     subName: offerSub.title,
-                    subDataGBLimit: lastOffer.data_limit / 1024**3,
-                    subDateLimit: lastOffer.date_limit
+                    subDataGBLimit: offerSub.data_limit / 1024**3,
+                    subDateLimit: offerSub.date_limit
                 };
 
                 //отправка информации о заявке
