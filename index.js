@@ -237,19 +237,21 @@ app.get('/offer', async (req, res) => {
         //информация о заказе в системе Marzban
         const marzbanInfo = await MarzbanAPI.GET_USER(username); 
 
-        //формирование ответа
-        const offerInfo = {
-            subName: offerSub.title,
-            subDataGBLimit: offerSub.data_limit,
-            usedGBtraffic: marzbanInfo.used_traffic / 1024**3,
-            subDateLimit: new Time(offerSub.date_limit).fromUnix(true),
-            createdDate: new Time(lastOffer[0].create_date).fromUnix(true),
-            inviteCode: user.invite_code,
-            connString: marzbanInfo.conn_string
-        }
+        console.log(marzbanInfo);
 
-        //ответ
-        response.body = offerInfo;
+        // //формирование ответа
+        // const offerInfo = {
+        //     subName: offerSub.title,
+        //     subDataGBLimit: offerSub.data_limit,
+        //     usedGBtraffic: marzbanInfo.used_traffic / 1024**3,
+        //     subDateLimit: new Time(offerSub.date_limit).fromUnix(true),
+        //     createdDate: new Time(lastOffer[0].create_date).fromUnix(true),
+        //     inviteCode: user.invite_code,
+        //     connString: marzbanInfo.conn_string
+        // }
+
+        // //ответ
+        // response.body = offerInfo;
         response.send();
 
     }catch(err){
