@@ -455,8 +455,7 @@ app.patch('/recreate', async (req, res) => {
         for(let i = 0; i < users.length; i++){
             const offerForUser = await OFFER.FIND({
                 user_id : users[i],
-                end_time : `>${dateTimeNow}`,
-                conn_string : '*'
+                end_time : `>${dateTimeNow}` //conn_string : '*' (Только со строкой подключения)
             }, true, '!offer_id');
             
             // Получение информации о заказе
