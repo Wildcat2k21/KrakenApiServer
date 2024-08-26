@@ -190,7 +190,7 @@ class Database {
 
 //Экранировать ковычки
 function clearSqlQuery(sql){
-    const cleanedSql = sql.replace(/'/g, '\'\'');
+    return sql.replace(/'/g, '\'\'');
 }
 
 module.exports = Database;
