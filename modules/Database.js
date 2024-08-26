@@ -14,9 +14,8 @@ class Database {
         return new Promise((resolve, reject) => {
             //значения полей для вствки
             const fields = Object.keys(params);
-            const values = Object.values(params).map(field => {
-                const cleanValue = clearSqlQuery(field);
-                return (typeof cleanValue === 'number') ? cleanValue : `'${cleanValue}'`;
+            const values = Object.values(params).map(value => {
+                return clearSqlValue(value);
             });
 
             // Формирование запроса
@@ -35,15 +34,13 @@ class Database {
 
             // Значения для обновлений
             const updateParams = Object.keys(update).map(field => {
-                const cleanValue = clearSqlQuery(cleanValue);
-                const convertedValue = typeof cleanValue === 'number' ? cleanValue : `'${cleanValue}'`;
+                const convertedValue = clearSqlValue(update[field]);
                 return `${field} = ${convertedValue}`;
             });
 
             // Значения условия
             const conditionParams = Object.keys(condition).map(field => {
-                const cleanValue = clearSqlQuery(condition[field]);
-                const convertedValue = typeof cleanValue === 'number' ? cleanValue : `'${cleanValue}'`;
+                const convertedValue = clearSqlValue(condition[field]);
                 return `${field} = ${convertedValue}`;
             });
 
@@ -85,8 +82,8 @@ class Database {
                       return `${field} ${param}`;
                   }
             
-                  const value = clearSqlQuery(param ? rawValue.slice(1) : rawValue);
-                  return `${field} ${param ? param : '='} ${isNaN(value) ? `'${value}'` : `${value}`}`;
+                  const value = clearSqlValue(param ? rawValue.slice(1) : rawValue);
+                  return `${field} ${param ? param : '='} ${value}`;
             })
             
             // Установка ограничения
@@ -189,8 +186,8 @@ class Database {
 }
 
 //Экранировать ковычки
-function clearSqlQuery(sql){
-    return sql.replace(/'/g, '\'\'');
+function clearSqlValue(value){
+    return (typeof value === 'string') ? `${value.replace(/'/g, '\'\'')}` : value; 
 }
 
 module.exports = Database;
