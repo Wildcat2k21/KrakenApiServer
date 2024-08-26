@@ -187,7 +187,7 @@ class Database {
 
 //Экранировать ковычки
 function clearSqlValue(value){
-    return (typeof value === 'string') ? `${value.replace(/'/g, '\'\'')}` : value; 
+    return (typeof value === 'string') ? `'${value.replace(/'/g, '\'\'')}'` : value; 
 }
 
 module.exports = Database;
