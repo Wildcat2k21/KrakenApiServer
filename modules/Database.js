@@ -188,9 +188,9 @@ class Database {
     }
 }
 
-//убрать специальные символы из полей
+//Экранировать ковычки
 function clearSqlQuery(sql){
-    return sql.replace(/[^a-zA-Z0-9_@#.]/g, '');
+    const cleanedSql = sql.replace(/'/g, '\'\'');
 }
 
 module.exports = Database;
