@@ -9,6 +9,7 @@ const fs = require('fs').promises;
 // Пользовательские модули
 const Time = require('./modules/Time.js');
 const {WriteInLogFile} = require('./modules/Other.js');
+const BotService = require('./modules/BotService.js');
 const {checkUserFields, checkOfferFields, checkConfigFields
 } = require('./modules/Data.js');
 
@@ -18,6 +19,7 @@ let config = require('./config.json');
 //основаная конфигурация
 const PORT = process.env.PORT || 4015;
 const DATABASE = process.env.DATABASE_NAME;
+const ADMIN_ID = process.env.ADMIN_TELEGRAM_ID;
 
 //экземпляр базы данных
 const db = new Database(`${DATABASE}.db`);
@@ -798,7 +800,16 @@ async function confirmOffer(offerInfo, response){
         });
 
         // Тут уведомление о новой заявке (бесплатная платная для администратора)
-        // И уведомление пользователя о одобрении заявки (бесплатная одобряется сразу)
+        await BotService.NOTIFY([{
+            id: offerInfo._user.telegram_id,
+            message: 'Ваша заявка обработана! 🎉\n\nQR-код подключения по ней находится в опции "Моя подписка"'
+        },{
+            id: ADMIN_ID,
+            message: `Обработана заявка №${offerInfo._offer.offer_id} ℹ️/n/n
+            От "${offerInfo._user.full_name}", название тарифа: "${offerInfo._sub.name_id}"
+            Ознакомиться подробнее можно в панели управления заявками.
+            `
+        }]);
 
         // Отправка ответа
         response.status(200, 'Обновлено');
