@@ -195,7 +195,8 @@ app.post('/offer', async (req, res) => {
         //оповещение о новом заказе для адинистратора
         await BotService.NOTIFY([{
             id: ADMIN_ID,
-            message: `Новый заказ от: "${offerDetails._user.full_name}" 👤/n/n
+            message: `Новый заказ от: "${offerDetails._user.full_name}" 👤/n
+            Телеграм: @${offerDetails._user.telegram}/n/n
             К оплате: ${offerDetails.toPay} ₽
             `
         }]);
