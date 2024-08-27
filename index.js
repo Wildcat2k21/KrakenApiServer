@@ -219,7 +219,7 @@ app.get('/offer', async (req, res) => {
         const lastOffer = await OFFER.FIND([[{
             field: 'user_id',
             exacly: telegram_id
-        }]], true, {byField: 'offerId', decrease: true})
+        }]], true, {byField: 'offer_id', decrease: true})
 
         // Проверка наличия действительных заявок
         if(!lastOffer){
