@@ -4,7 +4,7 @@ const Response = require('./modules/Response.js');
 const Database = require('./modules/Database.js');
 const express = require('express');
 require('dotenv').config();
-const fs = require('fs');
+const fs = require('fs').promises;
 
 // Пользовательские модули
 const Time = require('./modules/Time.js');
@@ -335,30 +335,37 @@ app.patch('/confirm', async (req, res) => {
     }
 });
 
-// Изменение конфигурации API server
-app.post('/configure', (req, res) => {
+//изменение конфигурации
+app.post('/config', async (req, res) => {
+    const response = new Response(res);
 
-    const response = new Response(res, 200, 'modified');
-
-    try{
+    try {
+        //проверка корректности полей конфигурации
         checkConfigFields(req.body);
+        
+        await fs.writeFile('./config.json', JSON.stringify(req.body, null, 2));
+
+        //изменение конфигурации сервера
+        config = req.body;
+        response.send();
     }
     catch(err){
-        response.status(417, err.message);
-        return response.send();
+
+        //ошибка вызванная проверкой check
+        if(err.dataCheck){
+            return response.status(417, err.message).send();;
+        }
+
+        WriteInLogFile(err);
+
+        // Ппроверяем, если ошибка возникла при проверке конфигурации
+        if (err.message) {
+            response.status(417).send(err.message);
+        }
+        else {
+            response.status(500).send('Невозможно обновить конфигурацию');
+        }
     }
-
-    // Изменение файла конфигурации
-    fs.writeFile('./config.json', JSON.stringify(req.body, null, 2), (err) => {
-        if (err) {
-            WriteInLogFile(err);
-            response.status(500, 'Что-то пошло не так, попробуйте позже');
-        };
-    });
-
-    // Изменение конфигурации сервера
-    response.body = config = req.body;
-    response.send();
 });
 
 //получение конфигурации
@@ -368,19 +375,45 @@ app.get('/config', (req, res) => {
     response.send();
 });
 
-//получение логов
-app.get('/logs', async (req, res) => {
+// Завершение работы сервера
+app.post('/stop', (req, res) => {
+    const response = new Response(res);
 
+    // Отправка ответа
+    response.send();
+
+    // Закрытие сервера
+    server.close(() => {
+        WriteInLogFile('Server stopped');
+        process.exit(0);
+    });
+})
+
+//очистка логов 
+app.patch('/logs', async (req, res) => {
+    const response = new Response(res);
+
+    try {
+        await fs.writeFile('logs.txt', ''); // Очищаем файл логов
+        response.status(200).send('ok');
+    }
+    catch (err) {
+        WriteInLogFile(err);
+        response.status(500).send('Невозможно почистить файл логов');
+    }
+});
+
+//отправка логов
+app.get('/logs', async (req, res) => {
     const response = new Response(res);
 
     try{
-        response.body = await fs.readFileSync('logs.txt', 'utf8');
-        response.send();
+        const logs = await fs.readFile('logs.txt', 'utf-8');
+        response.status(200).send(logs);
     }
     catch(err){
         WriteInLogFile(err);
-        response.status(500, 'Что-то пошло не так, попробуйте позже');
-        response.send();
+        response.status(500).send('Невозможно отправить данные');
     }
 });
 
@@ -740,7 +773,7 @@ async function confirmOffer(offerInfo, response){
         // Обновление зависимостей для платного заказа
         if(offerInfo._offer.sub_id !== 'free' && offerInfo._offer.promo_id === 'friend' && offerInfo._offer.invite_code) {
             
-            //поиск пользователя с таким промокодом
+            // Поиск пользователя с таким промокодом
             const invitePromoCodeOwner = offerInfo._invitedBy || await USER.FIND([[{
                 field: 'invite_code',
                 exacly: offerInfo._offer.invite_code
