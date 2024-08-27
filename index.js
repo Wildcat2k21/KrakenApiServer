@@ -390,7 +390,7 @@ app.get('/data', async (req, res) => {
     const response = new Response(res);
 
     // Параметры поиска
-    let {tableName, condition, limit, desc} = req.query;
+    let {tableName, condition, desc} = req.query;
 
     // Проверка входных данных
     if(!tableName){
@@ -399,7 +399,7 @@ app.get('/data', async (req, res) => {
     }
 
     try{
-        response.body = await [db.find(tableName, condition, limit, desc)] || [];
+        response.body = await db.find(tableName, condition, false, desc) || [];
         response.send();
 
     }
