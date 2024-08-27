@@ -681,8 +681,6 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited, paymentC
         _user: userData,
         _invitedBy: invitedData
     }
-
-    console.log(JSON.stringify(offerDetails, null, 2));
     
     return offerDetails;
 }
@@ -787,21 +785,7 @@ async function confirmOffer(offerInfo, response){
         }
 
         // Обновление пользователя
-        if(userUpdateOptions) await USER.UPDATE(offerInfo._offer.user_id, userUpdateOptions);
-
-        // Если подписка бесплатная, убрать информацию о скидке и к оплате
-        if(offerInfo._offer.sub_id === 'free'){
-            delete offerInfo.discount;
-            delete offerInfo.price;
-            delete offerInfo.inviteCount;
-        }
-
-        // Удаление скрытых полей
-        Object.keys(offerInfo).forEach(key => {
-            if(key.startsWith('_')) delete offerInfo[key];
-        });
-
-        console.log(offerInfo._user);
+        if(userUpdateOptions) await USER.UPDATE(offerInfo._user.telegram_id, userUpdateOptions);
 
         // Тут уведомление о новой заявке (бесплатная платная для администратора)
         await BotService.NOTIFY([{
@@ -814,6 +798,18 @@ async function confirmOffer(offerInfo, response){
             Ознакомиться подробнее можно в панели управления заявками.
             `
         }]);
+
+        // Если подписка бесплатная, убрать информацию о скидке и к оплате
+        if(offerInfo._offer.sub_id === 'free'){
+            delete offerInfo.discount;
+            delete offerInfo.price;
+            delete offerInfo.inviteCount;
+        }
+
+        // Удаление скрытых полей
+        Object.keys(offerInfo).forEach(key => {
+            if(key.startsWith('_')) delete offerInfo[key];
+        });
 
         // Отправка ответа
         response.status(200, 'Обновлено');
