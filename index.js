@@ -794,7 +794,7 @@ async function confirmOffer(offerInfo, response){
         },{
             id: ADMIN_ID,
             message: `Обработана заявка №${offerInfo._offer.offer_id} ℹ️/n/n
-            От "${offerInfo._user.full_name}", название тарифа: "${offerInfo._sub.name_id}"
+            👤 "${offerInfo._user.full_name}", название тарифа: "${offerInfo._sub.name_id}."/n
             Ознакомиться подробнее можно в панели управления заявками.
             `
         }]);
