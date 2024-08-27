@@ -799,6 +799,8 @@ async function confirmOffer(offerInfo, response){
             if(key.startsWith('_')) delete offerInfo[key];
         });
 
+        console.log(offerInfo._user);
+
         // Тут уведомление о новой заявке (бесплатная платная для администратора)
         await BotService.NOTIFY([{
             id: offerInfo._user.telegram_id,
