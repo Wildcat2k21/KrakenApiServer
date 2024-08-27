@@ -70,8 +70,6 @@ class Database {
             // Формирование запроса
             const sql = `SELECT * FROM ${tableName}${conditionClause}`;
 
-            console.log(`"${sql}"`);
-
             // Выполнение запроса
             this.executeWithReturning(sql).then(result => {
                 // Если возвращать только одну запись
