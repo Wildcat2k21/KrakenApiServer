@@ -392,8 +392,15 @@ app.get('/data', async (req, res) => {
     // Параметры поиска
     let {tableName, condition, desc} = req.query;
 
-    console.log(tableName, condition, desc);
-    console.log(typeof desc);
+    //приобразование строки условий для постмана
+    if(typeof condition === 'string'){
+        condition = JSON.parse(condition);
+    }
+
+    //преобразование сортировки для постмана
+    if(typeof desc === 'string'){
+        desc = JSON.parse(desc);
+    }
 
     // Проверка входных данных
     if(!tableName){
