@@ -399,7 +399,7 @@ app.get('/data', async (req, res) => {
     }
 
     try{
-        response.body = await db.find(tableName, condition, false, desc) || [];
+        response.body = await db.find(tableName, condition, false, desc);
         response.send();
 
     }
