@@ -151,7 +151,7 @@ class Database {
 }
 
 //формирование условий для запроса
-function buildSqlCondition(condition, limit, desc){
+function buildSqlCondition(condition = [], limit, desc){
 
     //преобразование условия
     const operators = {
