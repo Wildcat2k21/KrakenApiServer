@@ -198,7 +198,11 @@ app.post('/offer', async (req, res) => {
             message: `Новый заказ от: "${offerDetails._user.full_name}" 👤/n
             Телеграм: @${offerDetails._user.telegram}/n/n
             К оплате: ${offerDetails.toPay} ₽
-            `
+            `,
+            control: {
+                action: 'accept offer',
+                offer_id
+            }
         }]);
 
         // --- сценарий для платных подписок ---
