@@ -681,6 +681,8 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited, paymentC
         _user: userData,
         _invitedBy: invitedData
     }
+
+    console.log(JSON.stringify(offerDetails, null, 2));
     
     return offerDetails;
 }
