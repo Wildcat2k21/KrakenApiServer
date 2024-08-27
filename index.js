@@ -63,7 +63,8 @@ app.post('/user', async (req, res) => {
         //оповещение о новом пользователе
         await BotService.NOTIFY([{
             id: ADMIN_ID,
-            message: `У вас новый пользователь ℹ️/n/n👤 "${body.full_name}". Всего пользователей: ${(totalParticipants + 1)}`
+            message: `У вас новый пользователь "${body.full_name}" ℹ️/n/n
+            👥 Всего пользователей: ${(totalParticipants + 1)}`
         }]);
 
         response.status(201, 'Создано')
