@@ -399,16 +399,6 @@ app.get('/data', async (req, res) => {
     }
 
     try{
-        //приобразование строки условий для постмана
-        if(typeof condition === 'string'){
-            condition = JSON.parse(condition);
-        }
-
-        //преобразование сортировки для постмана
-        if(typeof desc === 'string'){
-            desc = JSON.parse(desc);
-        }
-
         response.body = await db.find(tableName, condition, false, desc);
         response.send();
 
