@@ -222,7 +222,7 @@ app.get('/offer', async (req, res) => {
         }]], true, {byField: 'offer_id', decrease: true})
 
         // Проверка наличия действительных заявок
-        if(!lastOffer){
+        if(!lastOffer || (!lastOffer.conn_string && lastOffer.sub_id === 'free')){
             response.status(404, 'Нет действительных заявок');
             return response.send();
         }
@@ -241,7 +241,7 @@ app.get('/offer', async (req, res) => {
         };
 
         // Обработка зкаказа как "Ожидающий"
-        if(!lastOffer.conn_string) {
+        if(!lastOffer.conn_string){
             response.body = offerUser;
             return response.send();
         }
