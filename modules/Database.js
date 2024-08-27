@@ -70,7 +70,7 @@ class Database {
             // Формирование запроса
             const sql = `SELECT * FROM ${tableName}${conditionClause}`;
 
-            console.log(sql);
+            console.log(`"${sql}"`);
 
             // Выполнение запроса
             this.executeWithReturning(sql).then(result => {
