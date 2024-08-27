@@ -192,6 +192,14 @@ app.post('/offer', async (req, res) => {
             return await confirmOffer(offerDetails, response);
         }
 
+        //оповещение о новом заказе для адинистратора
+        await BotService.NOTIFY([{
+            id: ADMIN_ID,
+            message: `Новый заказ от: "${offerDetails._user.full_name}" 👤/n/n
+            К оплате: ${offerDetails.toPay} ₽
+            `
+        }]);
+
         // --- сценарий для платных подписок ---
 
         // Удаление скрытых полей
