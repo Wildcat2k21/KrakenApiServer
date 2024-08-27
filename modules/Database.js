@@ -38,14 +38,10 @@ class Database {
                 return `${field} = ${convertedValue}`;
             });
 
-            // Значения условия
-            const conditionParams = Object.keys(condition).map(field => {
-                const convertedValue = clearSqlValue(condition[field]);
-                return `${field} = ${convertedValue}`;
-            });
+            const conditionClause = buildSqlCondition(condition);
 
             // Формирование запроса
-            const sql = `UPDATE ${tableName} SET ${updateParams.join(', ')} WHERE ${conditionParams.join(' AND ')}`;
+            const sql = `UPDATE ${tableName} SET ${updateParams.join(', ')}${conditionClause}`;
 
             // Выполнение запроса
             this.executeNoDataReturning(sql).then(result => resolve(result)).catch(err => reject(err));
@@ -55,61 +51,30 @@ class Database {
     // Удаление записей из таблицы
     async delete(tableName, condition){
         return new Promise((resolve, reject) => {
-            // Значения условия
-            const conditionParams = Object.keys(condition).map(field => {
-                const convertedValue = typeof condition[field] === 'number' ? condition[field] : `'${condition[field]}'`;
-                return `${field} = ${convertedValue}`;
-            });
+  
+            const conditionClause = buildSqlCondition(condition);
             
             // Формирование запроса
-            const sql = `DELETE FROM ${tableName} WHERE ${conditionParams.join(' AND ')}`;
+            const sql = `DELETE FROM ${tableName}${conditionClause}`;
 
             // Выполнение запроса
             this.executeNoDataReturning(sql).then(result => resolve(result)).catch(err => reject(err));
         });
     }
 
-    async find(tableName, params, limit, desc) {
+    async find(tableName, condition, limit, desc) {
         return new Promise((resolve, reject) => {
-
-            const parameters = new Map([['!' , '!='], ['<' , '<'], ['>' , '>'], ['~', 'IS NULL'], ['*', 'IS NOT NULL']]);
-
-            // Значения полей для вствки
-            const sqlParams = Object.keys(params).map(field => {
-                  const rawValue = params[field].toString();
-                  const param = parameters.get(rawValue.charAt(0));
-                  if(param === 'IS NULL' || param === 'IS NOT NULL'){
-                      return `${field} ${param}`;
-                  }
             
-                  const value = clearSqlValue(param ? rawValue.slice(1) : rawValue);
-                  return `${field} ${param ? param : '='} ${value}`;
-            })
-            
-            // Установка ограничения
-            const limitClause = limit ? ` LIMIT ${Number(limit)}` : '';
+            const conditionClause = buildSqlCondition(condition, limit, desc);
 
-            // Сортировка
-            let orderClause = '';
-
-            // Порядок сортировки
-            if(typeof desc === 'string' && desc.length){
-                const isNegative = desc.charAt(0) === '!';
-                const sortField = isNegative ? desc.slice(1) : desc;
-                orderClause = ` ORDER BY ${sortField}${isNegative ? ' DESC' : ' ASC'}`;
-            }
-            
-            // Установка условия
-            const condition = (sqlParams.length) ? ` WHERE ${sqlParams.join(' AND ')}` : '';
-            
             // Формирование запроса
-            const sql = `SELECT * FROM ${tableName}${condition}${orderClause}${limitClause}`;
+            const sql = `SELECT * FROM ${tableName}${conditionClause}`;
 
             // Выполнение запроса
             this.executeWithReturning(sql).then(result => {
                 // Если возвращать только одну запись
-                if((typeof limit === 'boolean' && limit) || limit === 1){
-                    result = result[0];
+                if(limit && limit.toString() === 'true'){
+                    resolve(result[0]);
                 }
 
                 resolve(result)
@@ -185,9 +150,76 @@ class Database {
     }
 }
 
-//Экранировать ковычки
+//формирование условий для запроса
+function buildSqlCondition(condition, limit, desc){
+
+    //преобразование условия
+    const operators = {
+        exacly : '=',
+        less : '<',
+        more : '>',
+        exaclyLess : '<=',
+        exaclyMore : '>=',
+        nonEqual: '!='
+    }
+
+    const orConditions = condition.map(orGroup => {
+        return orGroup.map(andGroup => {
+            //проверка на наличие названия поля
+            if(typeof andGroup !== 'object' || !andGroup['field']) {
+                throw new Error('Не указаны поля в условии');
+            }
+
+            //поиск названия оператора
+            const fieldName = andGroup['field'];
+            const operatorName = Object.keys(andGroup).find(operatorName => operators[operatorName]);
+
+            //если оператор не найден, проверка, что условие является null
+            if(!operatorName && Object.keys(andGroup).indexOf('isNull') + 1){
+                return `${fieldName} ${andGroup.isNull.toString() === 'true' ? 'IS NULL' : 'IS NOT NULL'}`;
+            }
+
+            //проверка на наличие названия оператора
+            if(!operatorName || andGroup[operatorName] === undefined){
+                throw new Error('Не указано имя или значение оператора в условии');
+            }
+
+            //форматирование строки условия
+            const value = andGroup[operatorName];
+            const operator = operators[operatorName];
+            const formatValue = clearSqlValue(value);
+
+            //добавление условия
+            return `${fieldName} ${operator} ${formatValue}`;
+
+        }).join(' AND ')
+    }).join(' OR ')
+
+
+    let descClause = '', limitClause = '';
+
+    //лимиты по выборке
+    if (limit && (limit.toString() === 'true' || (!isNaN && limit > 0))){
+        limitClause = ` LIMIT ${ limit.toString() === 'true' ? 1 : limit }`;
+    }
+
+    //порядок сортировки
+    if(typeof desc === 'object'){
+        const columnName = desc.byField ? ' ' + desc.byField : '';
+        descClause = ` ORDER BY${columnName}${desc.decrease.toString() === 'true' ? ' DESC' : ' ASC'}`;
+    }
+
+    return `${orConditions ? ` WHERE ${orConditions}` : ''}${descClause}${limitClause}`;
+}
+
+//очистка строк вставки
 function clearSqlValue(value){
-    return (typeof value === 'string') ? `'${value.replace(/'/g, '\'\'')}'` : value; 
+
+    //обработка null
+    if(value === null) return 'NULL'
+
+    //обработка остальных значений
+    return (isNaN(value))  ? `'${value.replace(/'/g, '\'\'')}'` : value;
 }
 
 module.exports = Database;

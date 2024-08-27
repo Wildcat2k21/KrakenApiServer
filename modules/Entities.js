@@ -11,8 +11,8 @@ class USER {
     }
 
     // Поиск пользвоателя
-    static async FIND(params, limit, desc){
-        return await USER.database.find('user', params, limit, desc);
+    static async FIND(condition, limit, desc){
+        return await USER.database.find('user', condition, limit, desc);
     }
 
     // Подсчет количества записей
@@ -28,7 +28,10 @@ class USER {
 
     // Обновление пользователя
     static async UPDATE(telegram_id, update){
-        return await USER.database.update('user', update, {telegram_id});
+        return await USER.database.update('user', update, [[{
+                field: 'telegram_id',
+                exacly: telegram_id
+            }]]);
     }
 
     // Добавление пользователя
@@ -37,7 +40,7 @@ class USER {
         // Уникальный инвайт-код пользователя
         let invite_code = RandCode(4);
 
-        while(Array.from(await USER.database.find('user', {invite_code})).length){
+        while((await USER.database.find('user', [[{field: 'invite_code', exacly: invite_code}]], true))){
             invite_code = RandCode(4);
         }
 
@@ -60,8 +63,8 @@ class OFFER {
     }
 
     // Поиск заказов
-    static async FIND(params, limit, desc){
-        return await OFFER.database.find('offer', params, limit, desc);
+    static async FIND(condition, limit, desc){
+        return await OFFER.database.find('offer', condition, limit, desc);
     }
 
     // Добавление заказа
@@ -75,7 +78,7 @@ class OFFER {
 
     // Обновление пользователя
     static async UPDATE(offer_id, update){
-        return await OFFER.database.update('offer', update, {offer_id});
+        return await OFFER.database.update('offer', update, [[{field : 'offer_id', exacly: offer_id}]]);
     }
 }
 
@@ -89,8 +92,8 @@ class SUB {
     }
 
     // Поиск подписок
-    static async FIND(params, limit, desc){
-        return await SUB.database.find('sub', params, limit, desc);
+    static async FIND(condition, limit, desc){
+        return await SUB.database.find('sub', condition, limit, desc);
     }
 }
 
@@ -104,8 +107,8 @@ class PROMO {
     }
 
     // Поиск промокодов
-    static async FIND(params, limit, desc){
-        return await PROMO.database.find('promo', params, limit, desc);
+    static async FIND(condition, limit, desc){
+        return await PROMO.database.find('promo', condition, limit, desc);
     }
 }
 

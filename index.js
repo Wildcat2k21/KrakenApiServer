@@ -93,10 +93,16 @@ app.post('/offer', async (req, res) => {
         checkOfferFields(body);
 
         // Поиск такой подписки
-        offer_sub = await SUB.FIND({name_id: body.sub_id}, true);
+        offer_sub = await SUB.FIND([[{
+            field: 'name_id',
+            exacly: body.sub_id
+        }]], true);
 
         // Поиск отметки на первый заказ
-        offer_user = await USER.FIND({telegram_id: body.user_id}, true);
+        offer_user = await USER.FIND([[{
+            field: 'telegram_id',
+            exacly: body.user_id
+        }]], true);
 
         if(!offer_user){
             response.status(404, 'Пользователь не найден');
@@ -117,21 +123,34 @@ app.post('/offer', async (req, res) => {
 
         // Если промокод не передан - применяется промокод по умолчанию
         if(!body.promo_id){
-            offer_promo = await PROMO.FIND({name_id: 'default'}, true);
+            offer_promo = await PROMO.FIND([[{
+                field: 'name_id',
+                exacly: 'default'
+            }]], true);
         }
         else {
             // Проверка на пользовательский промокод
-            invited_by = await USER.FIND({invite_code: body.promo_id}, true);
+            invited_by = await USER.FIND([[{
+                field: 'invite_code',
+                exacly: body.promo_id
+            }]], true);
 
             // Проверка, что пользователь был приглашен
             if(invited_by){
-                offer_promo = await PROMO.FIND({name_id: 'friend'}, true);
+                offer_promo = await PROMO.FIND([[{
+                    field: 'name_id',
+                    exacly: 'friend'
+                }]], true);
+
                 body.invite_code = body.promo_id;
 
             }
             // Игнорировать скрытый промокод
             else if(body.promo_id !== 'friend'){
-                offer_promo = await PROMO.FIND({name_id: body.promo_id}, true);
+                offer_promo = await PROMO.FIND([[{
+                    field: 'name_id',
+                    exacly: body.promo_id
+                }]], true);
             }
             else {}
 
@@ -197,7 +216,10 @@ app.get('/offer', async (req, res) => {
 
     try{
         // Получение последнего заказа
-        const lastOffer = await OFFER.FIND({user_id: telegram_id}, true, '!offer_id')
+        const lastOffer = await OFFER.FIND([[{
+            field: 'user_id',
+            exacly: telegram_id
+        }]], true, {byField: 'offerId', decrease: true})
 
         // Проверка наличия действительных заявок
         if(!lastOffer){
@@ -206,7 +228,10 @@ app.get('/offer', async (req, res) => {
         }
 
         // Получение информации о тарифе
-        const offerSub = await SUB.FIND({name_id: lastOffer.sub_id}, true);
+        const offerSub = await SUB.FIND([[{
+            field: 'name_id',
+            exacly: lastOffer.sub_id
+        }]], true);
         
         // Информация о подписке
         const offerUser = {
@@ -222,7 +247,10 @@ app.get('/offer', async (req, res) => {
         }
 
         // Информация о пользователе
-        const user = await USER.FIND({telegram_id}, true);
+        const user = await USER.FIND([[{
+            field: 'telegram_id',
+            exacly: telegram_id
+        }]], true);
 
         // Название пользователя
         const username = `${lastOffer.sub_id}_${lastOffer.offer_id}`;
@@ -279,7 +307,10 @@ app.patch('/confirm', async (req, res) => {
 
     try{
         // Информация о заказе
-        const offerInfo = await OFFER.FIND({offer_id}, true);
+        const offerInfo = await OFFER.FIND([[{
+            field: 'offer_id',
+            exacly: offer_id
+        }]], true);
 
         // Если такой заявки нет
         if(!offerInfo){
@@ -359,7 +390,7 @@ app.get('/data', async (req, res) => {
     const response = new Response(res);
 
     // Параметры поиска
-    let {tableName, filters, limit, desc} = req.query;
+    let {tableName, condition, limit, desc} = req.query;
 
     // Проверка входных данных
     if(!tableName){
@@ -367,29 +398,8 @@ app.get('/data', async (req, res) => {
         return response.send();
     }
 
-    // Проверка входных данных
-    if(filters === undefined || filters === null){
-        filters = {};
-    }
-
-    // Проверка лимита
-    if(limit !== undefined && isNaN(limit)){
-        response.status(417, `Указанный лимит имеет неверный формат`);
-        return response.send();
-    }
-
-    // Проверка desc
-    if(desc !== undefined && desc !== 'true' && desc !== 'false'){
-        response.status(417, `Указанный порядок сортировки имеет неверный формат`);
-        return response.send();
-    }
-    
-    // Преобразование входных данных
-    limit = Number(limit);
-    desc = (desc === 'true') ? true : false;
-
     try{
-        response.body = await db.find(tableName, filters, limit, desc) || 'Not found';
+        response.body = await db.find(tableName, condition, limit, desc) || [];
         response.send();
 
     }
@@ -453,14 +463,22 @@ app.patch('/recreate', async (req, res) => {
     try{
         // Получение последних заказов
         for(let i = 0; i < users.length; i++){
-            const offerForUser = await OFFER.FIND({
-                user_id : users[i],
-                end_time : `>${dateTimeNow}` //conn_string : '*'
-            }, true, '!offer_id');
+
+            const offerForUser = await OFFER.FIND([[{
+                field: 'user_id',
+                exacly: users[i]
+            }, {
+                field: 'end_time',
+                more: dateTimeNow
+            }]], true, {byField: 'offer_id', decrease: true})
             
             // Получение информации о заказе
             if(offerForUser && offerForUser.conn_string){
-                const offerSub = await SUB.FIND({name_id: offerForUser.sub_id}, true);
+                const offerSub = await SUB.FIND([[{
+                    field: 'name_id',
+                    exacly: offerForUser.sub_id
+                }]], true);
+
                 offerForUser.data_limit = offerSub.data_limit;
                 usersOffers.push(offerForUser);
             }
@@ -575,22 +593,34 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited, paymentC
 
     // Проверка поля offer
     if(typeof offerOrId === 'number'){
-        offerDbData = await OFFER.FIND({offer_id: offerOrId}, true);
+        offerDbData = await OFFER.FIND([[{
+            field: 'offer_id',
+            exacly: offerOrId
+        }]], true);
     }
     
     // Страя добрая дедовская проверка
     if(!sub){
-        subDbData = await SUB.FIND({name_id: offerOrId.sub_id}, true);
+        subDbData = await SUB.FIND([[{
+            field: 'name_id',
+            exacly: offerOrId.sub_id
+        }]], true);
     }
     
     // Страя добрая дедовская проверка
     if(!promo){
-        promoDbData = await PROMO.FIND({name_id: offerOrId.promo_id}, true);
+        promoDbData = await PROMO.FIND([[{
+            field: 'name_id',
+            exacly: offerOrId.promo_id
+        }]], true);
     }
     
     // Страя добрая дедовская проверка
     if(!user){
-        userDbData = await USER.FIND({telegram_id: offerOrId.user_id}, true);
+        userDbData = await USER.FIND([[{
+            field: 'telegram_id',
+            exacly: offerOrId.user_id
+        }]], true);
     }
 
     // Вобор данных
@@ -669,11 +699,19 @@ async function confirmOffer(offerInfo, response){
         };
 
         // Выполняем запрос в обход методов работы с таблицей заказов
-        const oldOffer = await OFFER.FIND({
-            offer_id: `<${offerInfo._offer.offer_id}`,
-            user_id: offerInfo._user.telegram_id,
-            conn_string: '*'
-        }, true, '!offer_id');
+        const oldOffer = await OFFER.FIND([[{
+            field: 'offer_id',
+            less: offerInfo._offer.offer_id
+        },{
+            field: 'user_id',
+            exacly: offerInfo._user.telegram_id
+        },{
+            field: 'conn_string',
+            isNull: false
+        }]], true, {
+            byField: 'offer_id',
+            decrease: true
+        });
 
         // Если заказ найден, то удоляем его в системе Marzban
         if(oldOffer){
@@ -701,8 +739,13 @@ async function confirmOffer(offerInfo, response){
         
         // Обновление зависимостей для платного заказа
         if(offerInfo._offer.sub_id !== 'free' && offerInfo._offer.promo_id === 'friend' && offerInfo._offer.invite_code) {
+            
             //поиск пользователя с таким промокодом
-            const invitePromoCodeOwner = offerInfo._invitedBy || await USER.FIND({invite_code: offerInfo._offer.invite_code}, true);
+            const invitePromoCodeOwner = offerInfo._invitedBy || await USER.FIND([[{
+                field: 'invite_code',
+                exacly: offerInfo._offer.invite_code
+            }]], true);
+            
             await USER.INCREMENT_INVITE_COUNTER(invitePromoCodeOwner.telegram_id);
         }
 
