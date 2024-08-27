@@ -392,6 +392,9 @@ app.get('/data', async (req, res) => {
     // Параметры поиска
     let {tableName, condition, desc} = req.query;
 
+    console.log(tableName, condition, desc);
+    console.log(typeof desc);
+
     // Проверка входных данных
     if(!tableName){
         response.status(417, `Не передано название таблицы`);
