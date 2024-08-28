@@ -517,7 +517,7 @@ app.patch('/update', async (req, res) => {
 app.patch('/recreate', async (req, res) => {
 
     const response = new Response(res);
-    const {users, notify} = req.body.users;
+    const {users, notify} = req.body;
 
     // Проверка входных данных
     if(!(users instanceof Array) || !users.length){
