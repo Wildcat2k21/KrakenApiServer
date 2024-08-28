@@ -3,16 +3,15 @@ version: '3.9'
 services:
   api-server:
     image: api-server:latest
-    ports:
-      - "4015:4015"
+    network_mode: host
     restart: always
     volumes:
       - ./logs.txt:/app/logs.txt
+      - ./database.db:/app/database.db
 
   bot-service:
     image: bot-service:latest
-    ports:
-      - "2909:2909"
+    network_mode: host
     restart: always
     volumes:
       - ./logs.txt:/app/logs.txt
