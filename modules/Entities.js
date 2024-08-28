@@ -76,6 +76,11 @@ class OFFER {
         return await OFFER.database.insert('offer', offerWithDate);
     }
 
+    //удаление заявки
+    static async DELETE(offer_id){
+        return await OFFER.database.delete('offer', [[{field : 'offer_id', exacly: offer_id}]]);
+    }
+
     // Обновление пользователя
     static async UPDATE(offer_id, update){
         return await OFFER.database.update('offer', update, [[{field : 'offer_id', exacly: offer_id}]]);

@@ -344,7 +344,7 @@ app.get('/offer', async (req, res) => {
 app.patch('/confirm', async (req, res) => {
 
     const response = new Response(res);
-    const offer_id = req.body.offer_id;
+    const {offer_id, status} = req.body.offer_id;
 
     if(!offer_id){
         response.status(417, 'Не передан идентификатор заказа');
@@ -352,11 +352,36 @@ app.patch('/confirm', async (req, res) => {
     }
 
     try{
+
         // Информация о заказе
         const offerInfo = await OFFER.FIND([[{
             field: 'offer_id',
             exacly: offer_id
         }]], true);
+
+        //если заказ был отклонен, то удалить
+        if(status === 'rejected'){
+            
+            //удаление заявки
+            await OFFER.DELETE([[{
+                field: 'offer_id',
+                exacly: offer_id
+            }]]);
+
+            //оповещение пользователя
+            await BotService.NOTIFY([
+            {
+                id: ADMIN_ID,
+                message: `Заявка №${offer_id} была вами отклонена ℹ️`,
+            },{
+                id: offerInfo.user_id,
+                message: 'Ваша заявка была отклонена ℹ️/n/nПопробуйте создать новую 🔂',
+                withOptions: true
+            }]);
+
+            response.status(200, 'Заявка отклонена');
+            return response.send();
+        }
 
         // Если такой заявки нет
         if(!offerInfo){
