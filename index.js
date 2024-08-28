@@ -811,7 +811,8 @@ async function confirmOffer(offerInfo, response){
         // Тут уведомление о новой заявке (бесплатная платная для администратора)
         await BotService.NOTIFY([{
             id: offerInfo._user.telegram_id,
-            message: 'Ваша заявка обработана! 🎉/n/nQR-код подключения по ней находится в опции "Моя подписка"'
+            message: 'Ваша заявка обработана! 🎉/n/nQR-код подключения по ней находится в опции "Моя подписка"',
+            withOptions: true
         },{
             id: ADMIN_ID,
             message: `Обработана заявка №${offerInfo._offer.offer_id} ℹ️/n/n
