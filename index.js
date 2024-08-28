@@ -345,6 +345,7 @@ app.patch('/confirm', async (req, res) => {
 
     const response = new Response(res);
     const {offer_id, status} = req.body;
+    console.log(offer_id, status, req.body);
 
     if(!offer_id){
         response.status(417, 'Не передан идентификатор заказа');
