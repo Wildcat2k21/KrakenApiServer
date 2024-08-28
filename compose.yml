@@ -1,0 +1,14 @@
+version: '3.9'
+
+services:
+  api-server:
+    image: api-server:latest
+    ports:
+    - "4015:4015"
+    restart: always
+
+  bot-service:
+    image: bot-service:latest
+    ports:
+    - "2909:2909"
+    restart: always
