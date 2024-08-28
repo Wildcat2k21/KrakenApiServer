@@ -345,7 +345,6 @@ app.patch('/confirm', async (req, res) => {
 
     const response = new Response(res);
     const {offer_id, status} = req.body;
-    console.log(offer_id, status, req.body);
 
     if(!offer_id){
         response.status(417, 'Не передан идентификатор заказа');
@@ -400,6 +399,17 @@ app.patch('/confirm', async (req, res) => {
 
     }
     catch(err){
+
+        //обработка ошибок телеграм сервиса
+        if(err.response){
+            const statusCode = err.response.status;
+            const errorMessage = err.response.data;
+
+            WriteInLogFile(new Error(`Telegram response error on "Confirm Offer": ${statusCode} ${errorMessage}`));
+            response.status(statusCode, 'Что-то пошло не так, попробуйте позже');
+            return response.send();
+        }
+
         return databaseErrorHandler(err, response).send();
     }
 });
