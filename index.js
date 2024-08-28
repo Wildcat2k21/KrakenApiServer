@@ -517,7 +517,7 @@ app.patch('/update', async (req, res) => {
 app.patch('/recreate', async (req, res) => {
 
     const response = new Response(res);
-    const users = req.body.users;
+    const {users, notify} = req.body.users;
 
     // Проверка входных данных
     if(!(users instanceof Array) || !users.length){
@@ -593,17 +593,19 @@ app.patch('/recreate', async (req, res) => {
             //создание новвой заявки с тем же именем
             const requestData = await MarzbanAPI.CREATE_USER(userData);
 
-            //тут уведомление о пересоздании заявки для пользователя
-            await BotService.NOTIFY([
-                {
-                    id: usersOffers[i].user_id,
-                    message: `Ваша QR-код был автоматически обновлен системой ℹ️/n/n
-                    Откройте опцию "Моя подписка", чтобы использовать.
-                    `,
-                    withOptions: true
-                }
-            ]);
-            
+            if(notify){
+                //тут уведомление о пересоздании заявки для пользователя
+                await BotService.NOTIFY([
+                    {
+                        id: usersOffers[i].user_id,
+                        message: `Ваш QR-код был автоматически обновлен системой ℹ️/n/n
+                        Откройте опцию "Моя подписка", чтобы использовать.
+                        `,
+                        withOptions: true
+                    }
+                ]);
+            }
+
             //обновление строки подключения в заказе
             await OFFER.UPDATE(usersOffers[i].offer_id, {conn_string:  requestData.links[0]});
         }
