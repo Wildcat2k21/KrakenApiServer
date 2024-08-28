@@ -363,10 +363,7 @@ app.patch('/confirm', async (req, res) => {
         if(status === 'rejected'){
             
             //удаление заявки
-            await OFFER.DELETE([[{
-                field: 'offer_id',
-                exacly: offer_id
-            }]]);
+            await OFFER.DELETE(offer_id);
 
             //оповещение пользователя
             await BotService.NOTIFY([
