@@ -28,9 +28,10 @@ const app = express();
 // Инициализация базы данных
 initConnection();
 
-//примечание: Возможно if(err.response) || err.message никогда не выполнится с MarzbanAPI
-//Было исправлено только в месте использования MarzbanAPI без запросов к сторонним сервисам
-//потенциально имеются места для push уведомлений сервиса телеграм
+//примечание: Уже существуюшщие или отсутствующие заказы в пересоздании будут вызывать ошибку 409 или 404
+//примечение: В подтверждении заказов, в случае наличия или отсутсвия заказов в Marzban будет 409 или 404
+//примечание: В получении информации по заказе, в случае отсутсвия заказа в Marzban будет 404
+//Данные ошибки не критические если база данных не была затронута
 
 // Инициализация сущностей
 const user = new USER(db);
@@ -76,6 +77,17 @@ app.post('/user', async (req, res) => {
         // Ошибки формата данных для пользователя
         if(err.dataCheck){
             response.status(417, err.message);
+            return response.send();
+        }
+
+        //ошибка обработки телеграм сервиса
+        if(err.response){
+            //статус и сообщение
+            const statusCode = err.response.statusCode;
+            const errorMessage = err.response.data;
+            
+            WriteInLogFile(new Error(`Telegram service error on "User": ${statusCode} ${errorMessage}`));
+            response.status(statusCode, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         }
 
@@ -221,6 +233,17 @@ app.post('/offer', async (req, res) => {
 
     }
     catch(err){
+        //обработка ошибок телеграм сервиса
+        if(err.response){
+            //статус и сообщение телеграм сервиса
+            const statusCode = err.response.statusCode;
+            const message = err.response.data;
+
+            WriteInLogFile(new Error(`Telegram service error on "Offer": ${statusCode} ${message}`));
+            response.status(statusCode, 'Что-то пошло не так, попробуйте позже.');
+            return response.send();
+        }
+
         return databaseErrorHandler(err, response).send();
     }
 });
@@ -300,7 +323,7 @@ app.get('/offer', async (req, res) => {
         if (err.response) {
             const statusCode = err.response.status;
             const errorMessage = err.response.data.detail;
-            WriteInLogFile(new Error(`Marzban response: ${statusCode} ${errorMessage}`));
+            WriteInLogFile(new Error(`Marzban response on "Get Offer": ${statusCode} ${errorMessage}`));
             response.status(statusCode, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         } 
@@ -310,7 +333,7 @@ app.get('/offer', async (req, res) => {
         }
         else {
             err.message = err.message || 'Сервер Marzban не отвечает';
-            WriteInLogFile(new Error(`Marzban sending response error: ${err.message}`));
+            WriteInLogFile(new Error(`Marzban sending response error on "Get Offer": ${err.message}`));
             response.status(500, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         }
@@ -353,7 +376,8 @@ app.patch('/confirm', async (req, res) => {
         // Метод имеет внутренюю обработку ошибок
         await confirmOffer(offerDetails, response);
 
-    }catch(err){
+    }
+    catch(err){
         return databaseErrorHandler(err, response).send();
     }
 });
@@ -478,18 +502,6 @@ app.patch('/update', async (req, res) => {
         return response.send();
     }
 
-    // Проверка входных данных
-    if(typeof update !== 'object' || !Object.keys(update).length){
-        response.status(417, `Не переданы данные для обновления`);
-        return response.send();
-    }
-
-    // Проверка входных данных
-    if(typeof condition !== 'object' || !Object.keys(condition).length){
-        response.status(417, `Не переданы условия обновления`);
-        return response.send();
-    }
-
     try{
         await db.update(tableName, update, condition);
         response.send();
@@ -508,7 +520,7 @@ app.patch('/recreate', async (req, res) => {
     const users = req.body.users;
 
     // Проверка входных данных
-    if(!users || !users instanceof Array || !users.length){
+    if(!(users instanceof Array) || !users.length){
         response.status(417, `Пользователи для пересоздания не указаны`);
         return response.send();
     }
@@ -582,6 +594,15 @@ app.patch('/recreate', async (req, res) => {
             const requestData = await MarzbanAPI.CREATE_USER(userData);
 
             //тут уведомление о пересоздании заявки для пользователя
+            await BotService.NOTIFY([
+                {
+                    id: usersOffers[i].user_id,
+                    message: `Ваша QR-код был автоматически обновлен системой ℹ️/n/n
+                    Откройте опцию "Моя подписка", чтобы использовать.
+                    `,
+                    withOptions: true
+                }
+            ]);
             
             //обновление строки подключения в заказе
             await OFFER.UPDATE(usersOffers[i].offer_id, {conn_string:  requestData.links[0]});
@@ -595,8 +616,8 @@ app.patch('/recreate', async (req, res) => {
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
-            const errorMessage = err.response.data.detail;
-            WriteInLogFile(new Error(`Marzban response: ${statusCode} ${errorMessage}`));
+            const errorMessage = err.response.data.detail || err.response.data;
+            WriteInLogFile(new Error(`Marzban response Or telegram error on "Reacreate": ${statusCode} ${errorMessage}`));
             response.status(statusCode, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         } 
@@ -606,8 +627,8 @@ app.patch('/recreate', async (req, res) => {
         }
         // Остальные ошибки
         else {
-            err.message = err.message || 'Сервер Marzban не отвечает';
-            WriteInLogFile(new Error(`Marzban sending response error: ${err.message}`));
+            err.message = err.message || 'Сервер Marzban или Telegram не отвечает';
+            WriteInLogFile(new Error(`Marzban sending or telegram response error on "Reacreate": ${err.message}`));
             response.status(500, 'Что-то пошло не так, попробуйте позже');
             return response.send();
         }
@@ -627,17 +648,12 @@ app.delete('/delete', async (req, res) => {
         return response.send();
     }
 
-    // Проверка входных данных
-    if(typeof condition !== 'object' || !Object.keys(condition).length){
-        response.status(417, `Не переданы условия удаления`);
-        return response.send();
-    }
-
     try{
         await db.delete(tableName, condition);
         response.send();
 
-    }catch(err){
+    }
+    catch(err){
         return databaseErrorHandler(err, response).send();
     }
 });
@@ -843,8 +859,8 @@ async function confirmOffer(offerInfo, response){
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
             const statusCode = err.response.status;
-            const errorMessage = err.message || err.response.data.detail;
-            const error = new Error(`Marzban response: ${statusCode} ${errorMessage}`);
+            const errorMessage = err.response.data.detail || err.response.data;
+            const error = new Error(`Marzban OR telegram response on "Confirm": ${statusCode} ${errorMessage}`);
             WriteInLogFile(error);
             response.status(statusCode, 'Что-то пошло не так, попробуйте позже');
             return response.send();
@@ -855,8 +871,8 @@ async function confirmOffer(offerInfo, response){
         }
         //остальные ошибки
         else {
-            err.message = err.message || 'Сервер Marzban не отвечает';
-            const error = new Error(`Marzban sending response error: ${err.message}`);
+            err.message = err.message || 'Сервер Marzban или Telegram в "Confirm" не отвечает';
+            const error = new Error(`Marzban Or telegram sending response error: ${err.message}`);
             WriteInLogFile(error);
             response.status(500, 'Что-то пошло не так, попробуйте позже');
             return response.send();
