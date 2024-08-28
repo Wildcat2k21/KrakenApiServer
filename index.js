@@ -344,7 +344,7 @@ app.get('/offer', async (req, res) => {
 app.patch('/confirm', async (req, res) => {
 
     const response = new Response(res);
-    const {offer_id, status} = req.body.offer_id;
+    const {offer_id, status} = req.body;
 
     if(!offer_id){
         response.status(417, 'Не передан идентификатор заказа');
@@ -352,7 +352,6 @@ app.patch('/confirm', async (req, res) => {
     }
 
     try{
-
         // Информация о заказе
         const offerInfo = await OFFER.FIND([[{
             field: 'offer_id',
