@@ -946,6 +946,16 @@ function databaseErrorHandler(err, response){
 
 // Запуск сервера на указанном порту
 app.listen(PORT, '0.0.0.0', async () => {
+
+//Тестовое добавление записи в таблицу
+db.executeNoDataReturning(`
+INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
+VALUES 
+    ('light', 'Лайт', 10, 2592000, 100, 1),
+    ('limitedBasic', 'Персональный', 50, 2592000, 190, 1),
+    ('family', 'Семейный', 250, 2592000, 500, 1);
+`);
+
     console.clear();
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
 });
