@@ -65,7 +65,7 @@ app.post('/user', async (req, res) => {
         await BotService.NOTIFY([{
             id: ADMIN_ID,
             message: `У вас новый пользователь:/n/n
-            👤"${body.full_name}"/n/n
+            👤"${body.nickname}"/n/n
             👥 Всего пользователей: ${(totalParticipants + 1)}`
         }]);
 
@@ -207,7 +207,7 @@ app.post('/offer', async (req, res) => {
         //оповещение о новом заказе для адинистратора
         await BotService.NOTIFY([{
             id: ADMIN_ID,
-            message: `Новый заказ от: "${offerDetails._user.full_name}" 👤/n
+            message: `Новый заказ от: "${offerDetails._user.nickname}" 👤/n
             Телеграм: @${offerDetails._user.telegram}/n/n
             К оплате: ${offerDetails.toPay} ₽
             `,
@@ -866,7 +866,7 @@ async function confirmOffer(offerInfo, response){
         },{
             id: ADMIN_ID,
             message: `Обработана заявка №${offerInfo._offer.offer_id} ℹ️/n/n
-            👤 Пользователь: "${offerInfo._user.full_name}"/n/n
+            👤 Пользователь: "${offerInfo._user.nickname}"/n/n
             📶 Название тарифа: "${offerInfo._sub.title}."/n/n
             Ознакомиться подробнее можно в панели управления заявками.
             `
@@ -946,16 +946,6 @@ function databaseErrorHandler(err, response){
 
 // Запуск сервера на указанном порту
 app.listen(PORT, '0.0.0.0', async () => {
-
-//Тестовое добавление записи в таблицу
-db.executeNoDataReturning(`
-INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
-VALUES 
-    ('light', 'Лайт', 10, 2592000, 100, 1),
-    ('limitedBasic', 'Персональный', 50, 2592000, 190, 1),
-    ('family', 'Семейный', 250, 2592000, 500, 1);
-`);
-
     console.clear();
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
 });

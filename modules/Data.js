@@ -1,21 +1,8 @@
 function checkUserFields(data){
     const requedFields = {
-        'full_name': {
+        'nickname': {
             max_length: 100,
-            name: 'ФИО'
-        },
-        'education_status': {
-            max_length: 50,
-            name: 'Учёная степень'
-        },
-        'phone_number': {
-            max_length: 15,
-            name: 'Номер телефона',
-            type: 'number'
-        },
-        'email': {
-            max_length: 100,
-            name: 'Email'
+            name: 'Никнейм'
         },
         'telegram': {
             max_length: 32,

@@ -18,15 +18,13 @@ CREATE TABLE sub (
 -- Пользователи
 CREATE TABLE user (
     telegram_id INTEGER PRIMARY KEY,
-    full_name TEXT NOT NULL CHECK(LENGTH(full_name) <= 100),
-    education_status TEXT NOT NULL CHECK(LENGTH(education_status) <= 50),
-    phone_number INTEGER NOT NULL,
-    email TEXT NOT NULL CHECK(LENGTH(email) <= 100),
+    nickname TEXT NOT NULL CHECK(LENGTH(nickname) <= 100),
     registration_date INTEGER NOT NULL,
     telegram TEXT NOT NULL CHECK(LENGTH(telegram) <= 32),
     free_trial_used INTEGER DEFAULT 0,
     invite_code TEXT NOT NULL CHECK(LENGTH(invite_code) = 4) UNIQUE,
     invite_count INTEGER DEFAULT 0,
+    invited_with_code TEXT DEFAULT NULL,
     blocked INTEGER DEFAULT 0
 );
 
@@ -51,11 +49,23 @@ CREATE TABLE offer (
 
 -- Вставка подписки "Free Trial"
 INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
-VALUES ('free', 'Бесплатная', 0, 86400, 0, 0);
+VALUES ('free', 'Бесплатная', 2, 2592000, 0, 0);
+
+-- Вставка подписки "Free Trial"
+INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
+VALUES ('light', 'Лайт', 15, 2592000, 100, 0);
+
+-- Вставка подписки "Free Trial"
+INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
+VALUES ('personal', 'Персональный', 60, 2592000, 190, 0);
+
+-- Вставка подписки "Free Trial"
+INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
+VALUES ('family', 'Семейный', 300, 2592000, 500, 0);
 
 -- Вставка подписки "Basic"
 INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
-VALUES ('basic', 'Базовый', 0, 2592000 , 250, 1);
+VALUES ('basic', 'Безлимит', 0, 2592000 , 1000, 1);
 
 --- промокоды ---
 
