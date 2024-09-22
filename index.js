@@ -187,7 +187,7 @@ app.post('/offer', async (req, res) => {
             exacly: offer_user.telegram_id
         }, {
             field: 'conn_string',
-            isNaN: false
+            isNull: false
         }, {
             field: 'sub_id',
             nonEqual: 'free'
@@ -421,7 +421,7 @@ app.patch('/confirm', async (req, res) => {
             exacly: offerDetails._user.telegram_id
         }, {
             field: 'conn_string',
-            isNaN: false
+            isNull: false
         }, {
             field: 'sub_id',
             nonEqual: 'free'
