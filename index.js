@@ -61,6 +61,23 @@ app.post('/user', async (req, res) => {
         // Создание нового пользователя
         await USER.NEW(body);
 
+        //уведомление пользователя о новом приглашении
+        if(body.invited_with_code){
+            //информирование пользователя о новом приглашении по коду
+            const invitedBy = await USER.FIND([[{
+                field: 'invite_code',
+                exacly: body.invited_with_code
+            }]]);
+
+            //сообщение для пользователя
+            await BotService.NOTIFY([{
+                id: invitedBy.telegram_id,
+                message: `Вашей реферальной ссылкой воспользовался пользователь: @${body.telegram} 🤝/n/n
+                Как только пользователь оформит заказ, ваша скидка вырастит еще на <b>${config.invite_discount}%</b>/n
+                <b>Пригласите еще друга и получите любую подписку в подарок бесплатно 🎁</b>`
+            }]);
+        }
+
         //оповещение о новом пользователе
         await BotService.NOTIFY([{
             id: ADMIN_ID,
@@ -108,7 +125,7 @@ app.post('/offer', async (req, res) => {
     }
 
     // Подписки заказы и т.д
-    let offer_promo, offer_user, offer_id,offer_sub, invited_by, paymentCalc;
+    let offer_promo, offer_user, offer_id,offer_sub, paymentCalc, invited_by;
 
     try{
         // Проверка на поля заказа
@@ -151,30 +168,11 @@ app.post('/offer', async (req, res) => {
             }]], true);
         }
         else {
-            // Проверка на пользовательский промокод
-            invited_by = await USER.FIND([[{
-                field: 'invite_code',
+            //поиск промокода
+            offer_promo = await PROMO.FIND([[{
+                field: 'name_id',
                 exacly: body.promo_id
             }]], true);
-
-            // Проверка, что пользователь был приглашен
-            if(invited_by){
-                offer_promo = await PROMO.FIND([[{
-                    field: 'name_id',
-                    exacly: 'friend'
-                }]], true);
-
-                body.invite_code = body.promo_id;
-
-            }
-            // Игнорировать скрытый промокод
-            else if(body.promo_id !== 'friend'){
-                offer_promo = await PROMO.FIND([[{
-                    field: 'name_id',
-                    exacly: body.promo_id
-                }]], true);
-            }
-            else {}
 
             // Проверка существования промокода
             if(!offer_promo){
@@ -183,6 +181,29 @@ app.post('/offer', async (req, res) => {
             }
         }
 
+        //для расчета скидки на первый заказ по инвайту, проверка на отсутствие до этого заказов (вкл бесплатную)
+        const paidOffer = await OFFER.FIND([[{
+            field: 'user_id',
+            exacly: offer_user.telegram_id
+        }, {
+            field: 'conn_string',
+            isNaN: false
+        }, {
+            field: 'sub_id',
+            nonEqual: 'free'
+        }]], true);
+
+        //поиск пользователя, что кинул приглашение
+        if(offer_user.invited_with_code){
+            invited_by = await USER.FIND([[{
+                field: 'invite_code',
+                exacly: offer_user.invited_with_code
+            }]], true);
+        }
+
+        //флаг на отсутствие платных заказов и наличия приглашения для расчета скидки
+        const hasNoPaidAndIsInvited = !paidOffer && invited_by;
+
         // Подмена промокода
         body.promo_id = offer_promo.name_id;
 
@@ -190,13 +211,13 @@ app.post('/offer', async (req, res) => {
         body.end_time = new Time().addTime(offer_sub.date_limit).shortUnix();
 
         // создание нового заказа
-        paymentCalc = calcPriceAndDiscount(offer_sub.price, offer_user.invite_count, offer_promo.discount);
+        paymentCalc = calcPriceAndDiscount(offer_sub.price, offer_user.invite_count, offer_promo.discount, hasNoPaidAndIsInvited);
 
         // Создание нового заказа
         offer_id = await OFFER.NEW({...body, ...paymentCalc});
 
         // Создание деталей подписки
-        const offerDetails = await createOfferDetails(offer_id, offer_sub, offer_promo, offer_user, invited_by, paymentCalc);
+        const offerDetails = await createOfferDetails(offer_id, offer_sub, offer_promo, offer_user);
 
         // Проверка автооформление бесплатной подписки
         if(config.auto_accept_free_trial && body.sub_id === 'free'){
@@ -368,7 +389,7 @@ app.patch('/confirm', async (req, res) => {
             await BotService.NOTIFY([
             {
                 id: ADMIN_ID,
-                message: `Заявка №${offer_id} была вами отклонена ℹ️`,
+                message: `Заявка №${offer_id} была отклонена ℹ️`,
             },{
                 id: offerInfo.user_id,
                 message: 'Ваша заявка была отклонена ℹ️/n/nПопробуйте создать новую 🔂',
@@ -394,9 +415,28 @@ app.patch('/confirm', async (req, res) => {
         // Получение данных о заказе
         const offerDetails = await createOfferDetails(offerInfo);
 
+        //для расчета скидки на первый заказ по инвайту, проверка на отсутствие до этого заказов (вкл бесплатную)
+        offerDetails._paidOffer = await OFFER.FIND([[{
+            field: 'user_id',
+            exacly: offerDetails._user.telegram_id
+        }, {
+            field: 'conn_string',
+            isNaN: false
+        }, {
+            field: 'sub_id',
+            nonEqual: 'free'
+        }]], true);
+
+        //поиск пользователя, что кинул приглашение
+        if(offerDetails._user.invited_with_code){
+            offerDetails._invitedBy = await USER.FIND([[{
+                field: 'invite_code',
+                exacly: offerDetails._user.invited_with_code
+            }]], true);
+        }
+
         // Метод имеет внутренюю обработку ошибок
         await confirmOffer(offerDetails, response);
-
     }
     catch(err){
 
@@ -693,9 +733,9 @@ app.delete('/delete', async (req, res) => {
 });
 
 // Генерация ответа для заказа пользователя
-async function createOfferDetails(offerOrId, sub, promo, user, invited, paymentCalc){
+async function createOfferDetails(offerOrId, sub, promo, user){
 
-    let offerDbData, subDbData, promoDbData, userDbData, invitedDbData;
+    let offerDbData, subDbData, promoDbData, userDbData;
 
     // Проверка поля offer
     if(typeof offerOrId === 'number'){
@@ -730,38 +770,35 @@ async function createOfferDetails(offerOrId, sub, promo, user, invited, paymentC
     }
 
     // Вобор данных
-    const subData = sub || subDbData;
-    const promoData = promo || promoDbData;
-    const userData = user || userDbData;
-    const invitedData = invited || invitedDbData;
+    const subData = subDbData || sub;
+    const promoData = promoDbData || promo;
+    const userData = userDbData || user;
     const offerData = offerDbData || offerOrId;
-
-    // Расчет цены и скидки
-    const {payment, discount} = paymentCalc || calcPriceAndDiscount(subData.price, userData.invite_count, promoData.discount);
 
     // Информация для пользователя
     const offerDetails = {
         subname: subData.title,
         price: subData.price,
-        toPay: payment,
-        discount,
+        toPay: offerData.payment,
+        discount: offerData.discount,
         promoName: promoData.title,
         inviteCount: userData.invite_count,
+        offerId: offerData.offer_id,
         _offer: offerData,
         _sub: subData,
-        _user: userData,
-        _invitedBy: invitedData
+        _user: userData
     }
     
     return offerDetails;
 }
 
-function calcPriceAndDiscount(subPrice, invteCount, promoDiscount){
-        
-    // Скидки на оформление
-    const promoPrice = subPrice * (1 - promoDiscount/100);
-    const invitPrice = promoPrice * (1 - config.invite_discount/100 * invteCount);
-    const priceToPay = Math.ceil(invitPrice);
+function calcPriceAndDiscount(subPrice, invteCount, promoDiscount, hasNoPaidAndIsInvited){
+
+    //расчет скидки с учетом первого заказа (для приглашенного)
+    const promoPrice = subPrice * (1 - promoDiscount / 100);
+    const invitPrice = promoPrice * (1 - config.invite_discount / 100 * invteCount);
+    const invitedByPrice = (hasNoPaidAndIsInvited) ? invitPrice * (1 - config.for_invited_discount / 100) : invitPrice;
+    const priceToPay = Math.ceil(invitedByPrice);
 
     // Исключение отрицательной цены
     const payment = (priceToPay < 0) ? 0 : priceToPay;
@@ -844,15 +881,8 @@ async function confirmOffer(offerInfo, response){
         }
         
         // Обновление зависимостей для платного заказа
-        if(offerInfo._offer.sub_id !== 'free' && offerInfo._offer.promo_id === 'friend' && offerInfo._offer.invite_code) {
-            
-            // Поиск пользователя с таким промокодом
-            const invitePromoCodeOwner = offerInfo._invitedBy || await USER.FIND([[{
-                field: 'invite_code',
-                exacly: offerInfo._offer.invite_code
-            }]], true);
-            
-            await USER.INCREMENT_INVITE_COUNTER(invitePromoCodeOwner.telegram_id);
+        if(offerInfo._offer.sub_id !== 'free' && !offerInfo._paidOffer && offerInfo._invitedBy) {            
+            await USER.INCREMENT_INVITE_COUNTER(offerInfo._invitedBy.telegram_id);
         }
 
         // Обновление пользователя
