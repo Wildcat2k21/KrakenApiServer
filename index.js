@@ -282,7 +282,7 @@ app.get('/offer', async (req, res) => {
         // Информация о подписке
         const offerUser = {
             subName: offerSub.title,
-            subDataGBLimit: offerSub.data_limit / 1024**3,
+            subDataGBLimit: offerSub.data_limit, //1024**3
             subDateLimit: offerSub.date_limit
         };
 
