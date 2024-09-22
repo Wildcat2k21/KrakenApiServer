@@ -210,7 +210,7 @@ app.post('/offer', async (req, res) => {
         // Время окончания подписки
         body.end_time = new Time().addTime(offer_sub.date_limit).shortUnix();
 
-        // создание нового заказа
+        // Cоздание нового заказа
         paymentCalc = calcPriceAndDiscount(offer_sub.price, offer_user.invite_count, offer_promo.discount, hasNoPaidAndIsInvited);
 
         // Создание нового заказа
