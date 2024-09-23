@@ -392,8 +392,7 @@ app.patch('/confirm', async (req, res) => {
                 message: `Заявка №${offer_id} была отклонена ℹ️`,
             },{
                 id: offerInfo.user_id,
-                message: 'Ваша заявка была отклонена ℹ️/n/nПопробуйте создать новую 🔂',
-                withOptions: true
+                message: 'Ваша заявка была отклонена ℹ️/n/nПопробуйте создать новую 🔂'
             }]);
 
             response.status(200, 'Заявка отклонена');
