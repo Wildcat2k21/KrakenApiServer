@@ -325,6 +325,12 @@ app.get('/offer', async (req, res) => {
         // Информация о заказе в системе Marzban
         const marzbanInfo = await MarzbanAPI.GET_USER(username);
 
+        //скидка на следующую оплату
+        const nextPayDiscVal = user.invite_count * config.invite_discount;
+
+        //правка значения скидки
+        const convPayDiscVal = nextPayDiscVal > 100 ? 100 : nextPayDiscVal;
+
         // Формирование ответа
         response.body = {
             ...offerUser,
@@ -332,6 +338,8 @@ app.get('/offer', async (req, res) => {
             subDateLimit: new Time(marzbanInfo.expire).fromUnix(true),
             createdDate: new Time(lastOffer.create_date).fromUnix(true),
             inviteCode: user.invite_code,
+            userInviteCount: user.invite_count,
+            nextPayDiscount: convPayDiscVal,
             price: offerSub.price,
             connString: marzbanInfo.links[0]
         };
