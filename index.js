@@ -73,7 +73,7 @@ app.post('/user', async (req, res) => {
             await BotService.NOTIFY([{
                 id: invitedBy.telegram_id,
                 message: `<b>Вашей реферальной ссылкой воспользовался пользователь: @${body.telegram} 🤝</b>/n/n
-                Как только пользователь оформит заказ, ваша скидка вырастит еще на <b>${config.invite_discount}%</b>/n/n
+                Как только пользователь оформит платный заказ, ваша скидка вырастит на <b>${config.invite_discount}%</b>/n/n
                 <b><u>Пригласите еще друга и получите любую подписку в подарок бесплатно 🎁</u></b>`
             }]);
         }
@@ -908,9 +908,9 @@ async function confirmOffer(offerInfo, response){
             notifyUsers.push({
                 id: offerInfo._invitedBy.telegram_id,
                 message: `<b>Пользователь @${offerInfo._user.nickname} оформил платный заказ 🔥</b>/n/n
-                🪄 Вы получаете дополнительную скидку <b>${config.invite_discount}%</b>
-                🤝 Всего приглашено друзей — <b>${offerInfo._invitedBy.invite_count + 1}</b>
-                Пригласите еще друга и получите <b><u>любую подписку в подарок бесплатно 🎁</u></b>
+                🪄 Вы получаете дополнительную скидку <b>${config.invite_discount}%</b>/n
+                🤝 Всего приглашено друзей — <b>${offerInfo._invitedBy.invite_count + 1}</b>/n/n
+                 <b><u>Пригласите еще друга и получите любую подписку в подарок бесплатно 🎁</u></b>
                 `
             });
         }
