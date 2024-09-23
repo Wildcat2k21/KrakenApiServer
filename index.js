@@ -67,7 +67,7 @@ app.post('/user', async (req, res) => {
             const invitedBy = await USER.FIND([[{
                 field: 'invite_code',
                 exacly: body.invited_with_code
-            }]]);
+            }]], true);
 
             //сообщение для пользователя
             await BotService.NOTIFY([{
