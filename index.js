@@ -893,7 +893,7 @@ async function confirmOffer(offerInfo, response){
             message: `Обработана заявка №${offerInfo._offer.offer_id} ℹ️/n/n
             👤 Пользователь: "${offerInfo._user.nickname}"/n/n
             📶 Название тарифа: "${offerInfo._sub.title}."/n/n
-            Ознакомиться подробнее можно в панели управления заявками.
+            Ознакомиться подробнее можно в панели управления заявками
             `
         }]
 
@@ -907,7 +907,7 @@ async function confirmOffer(offerInfo, response){
         else {
             notifyUsers.push({
                 id: offerInfo._user.telegram_id,
-                message: 'Ваша заявка обработана! 🎉/n/nQR-код подключения по ней находится в опции "Моя подписка"',
+                message: `<b>Заявка "${offerInfo._sub.title}" подтверждена ✔️</b>/n/nПерейдите в опцию <br>"Моя подписка", чтобы ознакомиться</br>`,
                 withOptions: true
             });
         }
