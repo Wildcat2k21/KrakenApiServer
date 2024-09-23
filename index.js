@@ -888,19 +888,15 @@ async function confirmOffer(offerInfo, response){
         // Обновление пользователя
         if(userUpdateOptions) await USER.UPDATE(offerInfo._user.telegram_id, userUpdateOptions);
 
-        // Тут уведомление о новой заявке (бесплатная платная для администратора)
-        await BotService.NOTIFY([{
-            id: offerInfo._user.telegram_id,
-            message: 'Ваша заявка обработана! 🎉/n/nQR-код подключения по ней находится в опции "Моя подписка"',
-            withOptions: true
-        },{
+        //уведомление для администратора
+        const notifyUsers = [{
             id: ADMIN_ID,
             message: `Обработана заявка №${offerInfo._offer.offer_id} ℹ️/n/n
             👤 Пользователь: "${offerInfo._user.nickname}"/n/n
             📶 Название тарифа: "${offerInfo._sub.title}."/n/n
             Ознакомиться подробнее можно в панели управления заявками.
             `
-        }]);
+        }]
 
         // Если подписка бесплатная, убрать информацию о скидке и к оплате
         if(offerInfo._offer.sub_id === 'free'){
@@ -908,6 +904,17 @@ async function confirmOffer(offerInfo, response){
             delete offerInfo.price;
             delete offerInfo.inviteCount;
         }
+        //уведомлять пользователя только о платных подписках (бесплатные автоматически обрабатываются)
+        else {
+            notifyUsers.push({
+                id: offerInfo._user.telegram_id,
+                message: 'Ваша заявка обработана! 🎉/n/nQR-код подключения по ней находится в опции "Моя подписка"',
+                withOptions: true
+            });
+        }
+        
+        //отправка уведомления
+        await BotService.NOTIFY(notifyUsers)
 
         // Удаление скрытых полей
         Object.keys(offerInfo).forEach(key => {
