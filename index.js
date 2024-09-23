@@ -910,7 +910,7 @@ async function confirmOffer(offerInfo, response){
                 message: `<b>Пользователь @${offerInfo._user.nickname} оформил платный заказ 🔥</b>/n/n
                 🪄 Вы получаете дополнительную скидку <b>${config.invite_discount}%</b>
                 🤝 Всего приглашено друзей — <b>${offerInfo._invitedBy.invite_count + 1}</b>
-                Пригласите еще друга и получите <b><u>любую подписку в подарок бесплатно 🎁<u/></b>
+                Пригласите еще друга и получите <b><u>любую подписку в подарок бесплатно 🎁</u></b>
                 `
             });
         }
