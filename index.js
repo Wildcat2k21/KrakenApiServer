@@ -907,7 +907,7 @@ async function confirmOffer(offerInfo, response){
         else {
             notifyUsers.push({
                 id: offerInfo._user.telegram_id,
-                message: `<b>Заявка "${offerInfo._sub.title}" подтверждена ✔️</b>/n/nПерейдите в опцию <br>"Моя подписка", чтобы ознакомиться</br>`,
+                message: `<b>Заявка "${offerInfo._sub.title}" подтверждена ✔️</b>/n/nПерейдите в опцию <b>"Моя подписка", чтобы ознакомиться</b>`,
                 withOptions: true
             });
         }
