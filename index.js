@@ -73,7 +73,7 @@ app.post('/user', async (req, res) => {
             await BotService.NOTIFY([{
                 id: invitedBy.telegram_id,
                 message: `Вашей реферальной ссылкой воспользовался пользователь: @${body.telegram} 🤝/n/n
-                Как только пользователь оформит заказ, ваша скидка вырастит еще на <b>${config.invite_discount}%</b>/n
+                Как только пользователь оформит заказ, ваша скидка вырастит еще на <b>${config.invite_discount}%</b>/n/n
                 <b>Пригласите еще друга и получите любую подписку в подарок бесплатно 🎁</b>`
             }]);
         }
