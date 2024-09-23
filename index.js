@@ -886,11 +886,6 @@ async function confirmOffer(offerInfo, response){
         if(offerInfo._user.invite_count){
             userUpdateOptions = {...userUpdateOptions, invite_count: 0};
         }
-        
-        // Обновление зависимостей для платного заказа
-        if(offerInfo._offer.sub_id !== 'free' && !offerInfo._paidOffer && offerInfo._invitedBy) {      
-            await USER.INCREMENT_INVITE_COUNTER(offerInfo._invitedBy.telegram_id);
-        }
 
         // Обновление пользователя
         if(userUpdateOptions) await USER.UPDATE(offerInfo._user.telegram_id, userUpdateOptions);
@@ -904,6 +899,21 @@ async function confirmOffer(offerInfo, response){
             Ознакомиться подробнее можно в панели управления заявками
             `
         }]
+
+        // Обновление зависимостей для платного заказа
+        if(offerInfo._offer.sub_id !== 'free' && !offerInfo._paidOffer && offerInfo._invitedBy) {      
+            await USER.INCREMENT_INVITE_COUNTER(offerInfo._invitedBy.telegram_id);
+
+            //если пользователь был приглашен, кем-то уведомить о получении скидки
+            notifyUsers.push({
+                id: offerInfo._invitedBy.telegram_id,
+                message: `<b>Пользователь @${offerInfo._user.nickname} оформил платный заказ 🔥</b>/n/n
+                🪄 Вы получаете дополнительную скидку <b>${config.invite_discount}%</b>
+                🤝 Всего приглашено друзей — <b>${offerInfo._invitedBy.invite_count + 1}</b
+                Пригласите еще друга и получите <b><u>любую подписку в подарок бесплатно 🎁<u/></b>
+                `
+            });
+        }
 
         // Если подписка бесплатная, убрать информацию о скидке и к оплате
         if(offerInfo._offer.sub_id === 'free'){
