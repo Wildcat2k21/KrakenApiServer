@@ -48,7 +48,7 @@ CREATE TABLE offer (
 
 -- Вставка подписки "Free Trial"
 INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
-VALUES ('free', 'Бесплатная', 2, 2592000, 0, 0);
+VALUES ('free', 'Бесплатная', 5, 2592000, 0, 0);
 
 -- Вставка подписки "Free Trial"
 INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
