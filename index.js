@@ -886,9 +886,12 @@ async function confirmOffer(offerInfo, response){
         if(offerInfo._user.invite_count){
             userUpdateOptions = {...userUpdateOptions, invite_count: 0};
         }
+
+        console.log(offerInfo._offer.sub_id !== 'free', !offerInfo._paidOffer, offerInfo._invitedBy);
         
         // Обновление зависимостей для платного заказа
-        if(offerInfo._offer.sub_id !== 'free' && !offerInfo._paidOffer && offerInfo._invitedBy) {            
+        if(offerInfo._offer.sub_id !== 'free' && !offerInfo._paidOffer && offerInfo._invitedBy) {
+            console.log('Я отбработалась');          
             await USER.INCREMENT_INVITE_COUNTER(offerInfo._invitedBy.telegram_id);
         }
 
