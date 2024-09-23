@@ -680,7 +680,7 @@ app.patch('/recreate', async (req, res) => {
                         message: `Ваш QR-код был автоматически обновлен системой ℹ️/n/n
                         Откройте опцию "Моя подписка", чтобы использовать.
                         `,
-                        withOptions: true
+                        withDefaultOptions: true
                     }
                 ]);
             }
@@ -886,12 +886,9 @@ async function confirmOffer(offerInfo, response){
         if(offerInfo._user.invite_count){
             userUpdateOptions = {...userUpdateOptions, invite_count: 0};
         }
-
-        console.log(offerInfo._offer.sub_id !== 'free', !offerInfo._paidOffer, offerInfo._invitedBy);
         
         // Обновление зависимостей для платного заказа
-        if(offerInfo._offer.sub_id !== 'free' && !offerInfo._paidOffer && offerInfo._invitedBy) {
-            console.log('Я отбработалась');          
+        if(offerInfo._offer.sub_id !== 'free' && !offerInfo._paidOffer && offerInfo._invitedBy) {      
             await USER.INCREMENT_INVITE_COUNTER(offerInfo._invitedBy.telegram_id);
         }
 
@@ -919,7 +916,7 @@ async function confirmOffer(offerInfo, response){
             notifyUsers.push({
                 id: offerInfo._user.telegram_id,
                 message: `Заявка <b>"${offerInfo._sub.title}"</b> подтверждена ✔️/n/nПерейдите в опцию <b>"Моя подписка"</b>, чтобы ознакомиться 👇`,
-                withOptions: true
+                withDefaultOptions: true
             });
         }
         
