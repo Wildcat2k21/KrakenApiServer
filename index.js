@@ -1006,6 +1006,7 @@ async function initChanges(){
         `ALTER TABLE user DROP COLUMN phone_number;`,
         `ALTER TABLE user ADD COLUMN invited_with_code TEXT DEFAULT NULL;`,
         `ALTER TABLE user DROP COLUMN email;`,
+        `UPDATE sub SET data_limit = 5 WHERE name_id = 'free';`,
         `DELETE FROM promo WHERE name_id = 'friend';`,
         `ALTER TABLE offer DROP COLUMN invite_code;`
     ];
