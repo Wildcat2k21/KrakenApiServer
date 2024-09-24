@@ -998,8 +998,33 @@ function databaseErrorHandler(err, response){
     return response;
 }
 
+async function initChanges(){
+    const queries = [
+        `UPDATE sub SET title = 'personal' WHERE title = 'limitedBasic';`,
+        `ALTER TABLE user RENAME COLUMN full_name TO nickname;`,
+        `ALTER TABLE user DROP COLUMN education_status;`,
+        `ALTER TABLE user DROP COLUMN phone_number;`,
+        `ALTER TABLE user DROP COLUMN email;`,
+        `DELETE FROM sub WHERE name_id = 'friend';`,
+        `ALTER TABLE offer DROP COLUMN invite_code;`
+    ];
+
+    for(let i = 0; i < queries.length; i++){
+        await db.executeNoDataReturning(queries[i]);
+    }
+}
+
 // Запуск сервера на указанном порту
 app.listen(PORT, '0.0.0.0', async () => {
     console.clear();
+
+    try{
+        await initChanges();
+        console.log('База данных успешно изменена!!! 🍾');
+    }
+    catch(err){
+        console.log('Не удалось изменить базу данных: ❌', err);
+    }
+
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
 });
