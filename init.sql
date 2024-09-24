@@ -52,7 +52,7 @@ VALUES ('free', 'Бесплатная', 5, 2592000, 0, 0);
 
 -- Вставка подписки "Free Trial"
 INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
-VALUES ('light', 'Лайт', 15, 2592000, 100, 1);
+VALUES ('light', 'Лайт', 20, 2592000, 100, 1);
 
 -- Вставка подписки "Free Trial"
 INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
