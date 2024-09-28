@@ -12,6 +12,7 @@ const {WriteInLogFile} = require('./modules/Other.js');
 const BotService = require('./modules/BotService.js');
 const {checkUserFields, checkOfferFields, checkConfigFields
 } = require('./modules/Data.js');
+const TimeShedular = require('./modules/TimeShedular.js');
 
 // Конфигурация
 let config = require('./config.json');
@@ -82,7 +83,7 @@ app.post('/user', async (req, res) => {
         await BotService.NOTIFY([{
             id: ADMIN_ID,
             message: `У вас новый пользователь:/n/n
-            👤"${body.nickname}"/n/n
+            👤 @${body.telegram} — "${body.telegram}"/n/n
             👥 Всего пользователей: ${(totalParticipants + 1)}`
         }]);
 
@@ -325,6 +326,11 @@ app.get('/offer', async (req, res) => {
         // Информация о заказе в системе Marzban
         const marzbanInfo = await MarzbanAPI.GET_USER(username);
 
+        //проверка окончания подписки и выставления флага об окончании
+        if(marzbanInfo.expire <= new Time().shortUnix()){
+            offerUser.isExpired = true;
+        }
+
         //скидка на следующую оплату
         const nextPayDiscVal = user.invite_count * config.invite_discount;
 
@@ -336,7 +342,7 @@ app.get('/offer', async (req, res) => {
             ...offerUser,
             usedTraffic: marzbanInfo.used_traffic,
             subDateLimit: new Time(marzbanInfo.expire).fromUnix(true),
-            createdDate: new Time(lastOffer.create_date).fromUnix(true),
+            createdDate: new Time(lastOffer.created_date).fromUnix(true),
             inviteCode: user.invite_code,
             userInviteCount: user.invite_count,
             nextPayDiscount: convPayDiscVal,
@@ -642,13 +648,31 @@ app.patch('/recreate', async (req, res) => {
 
             //название заявки: 'тариф_идентификатор'
             const username = `${usersOffers[i].sub_id}_${usersOffers[i].offer_id}`;
-            const expire = usersOffers[i].end_time;
-            const data_limit = usersOffers[i].data_limit;
 
-            //удаление действительной заявки
+            // Информация о заказе в системе Marzban
+            const userMarzbanData = await MarzbanAPI.GET_USER(username);
+
+            // Проверка истечения времени подписки
+            if(userMarzbanData.expire <= new Time().shortUnix()){
+                response.status(403, 'ℹ️ Срок по вашей подписки истек. Оформите новую в "Новая заявка"');
+                return response.send();
+            }
+
+            // Расчет оставшегося трафика
+            const data_limit = userMarzbanData.data_limit - userMarzbanData.used_traffic;
+
+            //проверка истечения лимита
+            if(data_limit <= 0){
+                response.status(403, 'ℹ️ У вас закончился трафик по подписке. Оформите новую в "Новая заявка"');
+                return response.send();
+            }
+
+            const expire = usersOffers[i].end_time;
+
+            // Удаление действительной заявки
             await MarzbanAPI.DELETE_USER(username);
 
-            //тут генерируем строку подключения и передаем ее пользователю
+            // Тут генерируем строку подключения и передаем ее пользователю
             const userData = {
                 status: 'active',
                 username, //имя тарифа
@@ -669,11 +693,11 @@ app.patch('/recreate', async (req, res) => {
                 }
             };
 
-            //создание новвой заявки с тем же именем
+            // Создание новвой заявки с тем же именем
             const requestData = await MarzbanAPI.CREATE_USER(userData);
 
             if(notify){
-                //тут уведомление о пересоздании заявки для пользователя
+                // Тут уведомление о пересоздании заявки для пользователя
                 await BotService.NOTIFY([
                     {
                         id: usersOffers[i].user_id,
@@ -685,7 +709,7 @@ app.patch('/recreate', async (req, res) => {
                 ]);
             }
 
-            //обновление строки подключения в заказе
+            // Обновление строки подключения в заказе
             await OFFER.UPDATE(usersOffers[i].offer_id, {conn_string:  requestData.links[0]});
         }
 
@@ -894,7 +918,7 @@ async function confirmOffer(offerInfo, response){
         const notifyUsers = [{
             id: ADMIN_ID,
             message: `Обработана заявка №${offerInfo._offer.offer_id} ℹ️/n/n
-            👤 Пользователь: "${offerInfo._user.nickname}"/n/n
+            👤 @${offerInfo._user.telegram} — "${offerInfo._user.nickname}"/n/n
             📶 Название тарифа: "${offerInfo._sub.title}."/n/n
             Ознакомиться подробнее можно в панели управления заявками
             `
@@ -1018,6 +1042,117 @@ function databaseErrorHandler(err, response){
 //     }
 // }
 
+async function initTasks(){
+
+    //Поддержка проекта
+    TimeShedular.NewTask('notification', 28800000, async () => {
+
+        //получение всех пользователей для рассылки
+        const users = await USER.FIND();
+
+        const messageForUsers = users.map(user => {
+            return {
+                id : user.telegram_id,
+                message: `<b>${user.nickname}, вы можете помочь проекту, сделав его лучше и дешевле 🤝</b>/n/n
+                Разработчикам приходиться сопровождать проекты, поддерживать высокий сервис, чтобы сохранять ваше внимание и интерес. 
+                Приобретая платную подписку и приглашая друзей, вы помогаете нам поддерживать наши проекты, и мотивируете создавать новые./n/n
+                <b>Пригласите друзей по своей ссылке в "Моя подписка", и получите в знак нашей благодарности любую подписку в подарок 🎁</b>/n/n
+                Вступайте также к нам в группу <a href="https://t.me/lightvpn_test">Kraken Team Project</a>, чтобы быть в курсе наших новостей и релизов./n/n
+                <b>Ваша команда Kraken Team 🔱</b>`
+            }
+        })
+
+        //уведомление пользователей об акции за приглашение
+        if(messageForUsers.length){
+            await BotService.NOTIFY(messageForUsers);
+        }
+    });
+
+    //уведомление об окончании подписки
+    TimeShedular.NewTask('offer ending', 14400000, async () => { //
+
+        //получение всех заказов для рассылки
+        const offers = await OFFER.FIND();
+
+        //выбор заказов, у которых истекает подписка
+        const usersToNotify = [];
+
+        offers.forEach(offer => {
+            //текущее время
+            const timeNow = new Time().shortUnix(); //2500000
+
+            //если подписка полностью иссякла, прислать уведомление
+            if(timeNow >= offer.end_time){
+                usersToNotify.push({
+                    id: offer.user_id,
+                    message: `Срок по вашей подписки подошел к концу. Офрмите новую, чтобы продолжить 🔂`
+                });
+
+                return;
+            }
+
+            //если подписка заканчивается, прислать уведомление
+            if(timeNow + 432000 >= offer.end_time){
+                usersToNotify.push({
+                    id: offer.user_id,
+                    message: `Срок действия вашей подписки подходит к концу/n/n📅 ${new Time(offer.end_time).fromUnix(true)}/n/n
+                    <b>Не забудьте оформить новую, перед ее окончанием 🔂</b>
+                    `
+                })
+
+                return;
+            }
+        })
+
+        //уведомление пользователей об окончании подписки
+        if(usersToNotify.length){
+            await BotService.NOTIFY(usersToNotify);
+        }
+    });
+
+    // //уведомление о проблемах с подключением
+    // TimeShedular.NewTask('connection trouble', 30000, async () => {
+
+    //     //получение всех заказов с подключением
+    //     const activeOffers = await OFFER.FIND([[{
+    //         field : 'conn_string',
+    //         isNull: false
+    //     },{
+    //         field : 'end_time',
+    //         exaclyMore: new Time().shortUnix()
+    //     }]]);
+
+    //     const usersToNotify = [];
+
+    //     //получение информации по трафику в Marzban и рассылка инструкции
+    //     for(let i = 0; i < activeOffers.length; i++){
+
+    //         //название подписки пользователя в Marzban
+    //         const username = `${activeOffers[i].sub_id}_${activeOffers[i].offer_id}`;
+
+    //         //получить информацию по трафику
+    //         const userInMarzban = await MarzbanAPI.GET_USER(username);
+
+    //         //проверка отсутствия трафика
+    //         if(userInMarzban.used_traffic === 0){
+    //             usersToNotify.push({
+    //                 id: activeOffers[i].user_id,
+    //                 message: `<b>❓ Мы заметили у вас рабочую подписку, к который вы так и не подключились</b>/n/n
+    //                 Предлагаем вам просмотреть тик-ток инструкцию, какое у вас устройство ?
+    //                 `,
+    //                 sticker: 'CAACAgIAAxkBAAILcmb3bNBeO9K9SoPnnzGVfXXrkexPAAIFDgAC7QOxStTbeV9QVl0HNgQ'
+    //             })
+    //         }
+    //     }
+
+    //     //рассылка рпиглашения на просмотр инстукрции
+    //     if(usersToNotify.length){
+    //         await BotService.NOTIFY(usersToNotify);
+    //     }
+
+    // });
+}
+
 // Запуск сервера на указанном порту
 app.listen(PORT, '0.0.0.0', async () => {
     console.clear();
@@ -1030,5 +1165,6 @@ app.listen(PORT, '0.0.0.0', async () => {
     //     console.log('Не удалось изменить базу данных: ❌', err);
     // }
 
+    initTasks(); 
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
 });
