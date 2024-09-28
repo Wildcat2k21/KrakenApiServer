@@ -1069,10 +1069,15 @@ async function initTasks(){
     });
 
     //уведомление об окончании подписки
-    TimeShedular.NewTask('offer ending', 14400000, async () => { //
+    TimeShedular.NewTask('offer ending', 21600000, async () => { //
 
         //получение всех заказов для рассылки
-        const offers = await OFFER.FIND();
+        const offers = await OFFER.FIND([[
+            {
+                field: 'conn_string',
+                isNull: false
+            }
+        ]]);
 
         //выбор заказов, у которых истекает подписка
         const usersToNotify = [];
@@ -1110,47 +1115,51 @@ async function initTasks(){
         }
     });
 
-    // //уведомление о проблемах с подключением
-    // TimeShedular.NewTask('connection trouble', 30000, async () => {
+    //уведомление о проблемах с подключением
+    TimeShedular.NewTask('connection trouble', 10800000, async () => {
 
-    //     //получение всех заказов с подключением
-    //     const activeOffers = await OFFER.FIND([[{
-    //         field : 'conn_string',
-    //         isNull: false
-    //     },{
-    //         field : 'end_time',
-    //         exaclyMore: new Time().shortUnix()
-    //     }]]);
+        //получение всех заказов с подключением
+        const activeOffers = await OFFER.FIND([[{
+            field : 'conn_string',
+            isNull: false
+        },{
+            field : 'end_time',
+            exaclyMore: new Time().shortUnix()
+        }]]);
 
-    //     const usersToNotify = [];
+        const usersToNotify = [];
 
-    //     //получение информации по трафику в Marzban и рассылка инструкции
-    //     for(let i = 0; i < activeOffers.length; i++){
+        //получение информации по трафику в Marzban и рассылка инструкции
+        for(let i = 0; i < activeOffers.length; i++){
 
-    //         //название подписки пользователя в Marzban
-    //         const username = `${activeOffers[i].sub_id}_${activeOffers[i].offer_id}`;
+            //название подписки пользователя в Marzban
+            const username = `${activeOffers[i].sub_id}_${activeOffers[i].offer_id}`;
 
-    //         //получить информацию по трафику
-    //         const userInMarzban = await MarzbanAPI.GET_USER(username);
+            //получить информацию по трафику
+            const userInMarzban = await MarzbanAPI.GET_USER(username);
 
-    //         //проверка отсутствия трафика
-    //         if(userInMarzban.used_traffic === 0){
-    //             usersToNotify.push({
-    //                 id: activeOffers[i].user_id,
-    //                 message: `<b>❓ Мы заметили у вас рабочую подписку, к который вы так и не подключились</b>/n/n
-    //                 Предлагаем вам просмотреть тик-ток инструкцию, какое у вас устройство ?
-    //                 `,
-    //                 sticker: 'CAACAgIAAxkBAAILcmb3bNBeO9K9SoPnnzGVfXXrkexPAAIFDgAC7QOxStTbeV9QVl0HNgQ'
-    //             })
-    //         }
-    //     }
+            //проверка отсутствия трафика
+            if(userInMarzban.used_traffic === 0){
+                usersToNotify.push({
+                    id: activeOffers[i].user_id,
+                    control: {
+                        action: 'instruction'
+                    },
+                    message: `
+                        <b>❓ Мы заметили у вас рабочую подписку, к который вы так и не подключились</b>/n/n
+                        Предлагаем вам просмотреть короткую видео-инструкцию, какое у вас устройство ?
+                    `,
+                    sticker: 'CAACAgIAAxkBAAILcmb3bNBeO9K9SoPnnzGVfXXrkexPAAIFDgAC7QOxStTbeV9QVl0HNgQ'
+                })
+            }
+        }
 
-    //     //рассылка рпиглашения на просмотр инстукрции
-    //     if(usersToNotify.length){
-    //         await BotService.NOTIFY(usersToNotify);
-    //     }
+        //рассылка рпиглашения на просмотр инстукрции
+        if(usersToNotify.length){
+            await BotService.NOTIFY(usersToNotify);
+        }
 
-    // });
+    });
 }
 
 // Запуск сервера на указанном порту
