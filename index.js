@@ -349,7 +349,7 @@ app.get('/offer', async (req, res) => {
         const data_limit = traffic_balance <= 0 ? 0 : traffic_balance;
 
         //проверка окончания подписки и выставления флага об окончании
-        if(marzbanInfo.expire <= new Time().shortUnix() || (userMarzbanData.data_limit !== 0 && data_limit <= 1024)){
+        if(marzbanInfo.expire <= new Time().shortUnix() || (marzbanInfo.data_limit !== 0 && data_limit <= 1024)){
             offerUser.isExpired = true;
         }
 
