@@ -17,6 +17,7 @@ const TimeShedular = require('./modules/TimeShedular.js');
 
 // Конфигурация
 let config = require('./config.json');
+const { isNull } = require('util');
 
 //основаная конфигурация
 const PORT = process.env.PORT || 4015;
@@ -1036,26 +1037,6 @@ function databaseErrorHandler(err, response){
     return response;
 }
 
-// async function initChanges(){
-//     const queries = [
-//         `UPDATE sub SET name_id = 'personal' WHERE name_id = 'limitedBasic';`,
-//         `ALTER TABLE user RENAME COLUMN full_name TO nickname;`,
-//         `ALTER TABLE user DROP COLUMN education_status;`,
-//         `ALTER TABLE user DROP COLUMN phone_number;`,
-//         `ALTER TABLE user ADD COLUMN invited_with_code TEXT DEFAULT NULL;`,
-//         `ALTER TABLE user DROP COLUMN email;`,
-//         `UPDATE sub SET data_limit = 5 WHERE name_id = 'free';`,
-//         `UPDATE sub SET date_limit = 2592000 WHERE name_id = 'free';`,
-//         `UPDATE sub SET data_limit = 80 WHERE name_id = 'personal';`,
-//         `DELETE FROM promo WHERE name_id = 'friend';`,
-//         `ALTER TABLE offer DROP COLUMN invite_code;`
-//     ];
-
-//     for(let i = 0; i < queries.length; i++){
-//         await db.executeNoDataReturning(queries[i]);
-//     }
-// }
-
 async function initTasks(){
 
     //Поддержка проекта (каждые 48 часов)
@@ -1209,17 +1190,61 @@ async function initTasks(){
     });
 }
 
+
+async function initChanges(){
+
+    //получение актуальных пользователей
+    const actualOffers = await OFFER.FIND([[{
+        field: 'conn_string',
+        isNull: false
+    },{
+        field: 'end_time',
+        more: new Time().shortUnix()
+    }]]);    
+
+    //восстановление пользователей
+    for(let offer of actualOffers){
+        const username = `${offer.sub_id}_${offer.offer_id}`;
+        const data_limit = (await SUB.FIND([[{field: 'name_id', exacly: offer.sub_id}]], true)).data_limit * 1024**3;
+        const expire = offer.end_time;
+
+        // Тут генерируем строку подключения и передаем ее пользователю
+        const userData = {
+            status: 'active',
+            username, //имя тарифа
+            note: 'by API server', //примечание
+            proxies: {
+                vless: {
+                    flow: 'xtls-rprx-vision'
+                }
+            },
+            data_limit, //ГБ * 1024**3  
+            expire, //Unix-время в секундах работы тарифа
+            data_limit_reset_strategy: 'no_reset',
+            inbounds: {
+                vmess: ['VMess TCP', 'VMess Websocket'],
+                vless: ['VLESS TCP REALITY'],
+                trojan: ['Trojan Websocket TLS'],
+                shadowsocks: ['Shadowsocks TCP']
+            }
+        };
+
+        console.log(username, data_limit, expire);
+        await MarzbanAPI.CREATE_USER(userData);
+    }
+}
+
 // Запуск сервера на указанном порту
 app.listen(PORT, '0.0.0.0', async () => {
     console.clear();
 
-    // try{
-    //     await initChanges();
-    //     console.log('База данных успешно изменена!!! 🍾');
-    // }
-    // catch(err){
-    //     console.log('Не удалось изменить базу данных: ❌', err);
-    // }
+    try{
+        await initChanges();
+        console.log('База данных успешно изменена!!! 🍾');
+    }
+    catch(err){
+        console.log('Не удалось изменить базу данных: ❌', err.response.data);
+    }
 
     initTasks(); 
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
