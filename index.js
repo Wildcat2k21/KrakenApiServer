@@ -5,10 +5,11 @@ const Database = require('./modules/Database.js');
 const express = require('express');
 require('dotenv').config();
 const fs = require('fs').promises;
+const path = require('path');
 
 // Пользовательские модули
 const Time = require('./modules/Time.js');
-const {WriteInLogFile} = require('./modules/Other.js');
+const {WriteInLogFile, FormatBytes} = require('./modules/Other.js');
 const BotService = require('./modules/BotService.js');
 const {checkUserFields, checkOfferFields, checkConfigFields
 } = require('./modules/Data.js');
@@ -42,6 +43,19 @@ const promo = new PROMO(db);
 
 // Middleware для парсинга JSON-тел
 app.use(express.json());
+
+// Путь к файлу базы данных
+const databasePath = path.join(__dirname, 'database.zip');
+
+// Маршрут для скачивания базы данных
+app.get('/database', (req, res) => {
+    res.download(databasePath, 'database.zip', (err) => {
+        if (err) {
+            console.error('Ошибка при отправке файла:', err);
+            res.status(500).send('Ошибка при скачивании файла');
+        }
+    });
+});
 
 // Регистрация пользователей
 app.post('/user', async (req, res) => {
@@ -1044,8 +1058,8 @@ function databaseErrorHandler(err, response){
 
 async function initTasks(){
 
-    //Поддержка проекта
-    TimeShedular.NewTask('notification', 28800000, async () => {
+    //Поддержка проекта (каждые 48 часов)
+    TimeShedular.NewTask('notification', 172800000, async () => {
 
         //получение всех пользователей для рассылки
         const users = await USER.FIND();
@@ -1068,8 +1082,8 @@ async function initTasks(){
         }
     });
 
-    //уведомление об окончании подписки
-    TimeShedular.NewTask('offer ending', 21600000, async () => { //
+    //уведомление об окончании подписки (каждые 24 часов)
+    TimeShedular.NewTask('offer ending', 86400000, async () => {
 
         //получение всех заказов для рассылки
         const offers = await OFFER.FIND([[
@@ -1080,9 +1094,10 @@ async function initTasks(){
         ]]);
 
         //выбор заказов, у которых истекает подписка
-        const usersToNotify = [];
+        const untilTime = 432000, untilData = 3 * 1024**3, usersToNotify = [];
 
-        offers.forEach(offer => {
+        for(let offer of offers){
+
             //текущее время
             const timeNow = new Time().shortUnix(); //2500000
 
@@ -1093,11 +1108,11 @@ async function initTasks(){
                     message: `Срок по вашей подписки подошел к концу. Офрмите новую, чтобы продолжить 🔂`
                 });
 
-                return;
+                break
             }
 
             //если подписка заканчивается, прислать уведомление
-            if(timeNow + 432000 >= offer.end_time){
+            if(timeNow + untilTime >= offer.end_time){
                 usersToNotify.push({
                     id: offer.user_id,
                     message: `Срок действия вашей подписки подходит к концу/n/n📅 ${new Time(offer.end_time).fromUnix(true)}/n/n
@@ -1105,9 +1120,41 @@ async function initTasks(){
                     `
                 })
 
-                return;
+                break
             }
-        })
+
+            // Имя пользователя в Marzban
+            const username = offer.sub_id + '_' + offer.offer_id;
+                
+            // Получение пользвоателя Marzban
+            const marzbanUser = await MarzbanAPI.GET_USER(username);
+
+            //расчет трафика
+            const traffic_balance = marzbanUser.data_limit - marzbanUser.used_traffic;
+
+            // Если трафик по подписке истек
+            if(traffic_balance <= 0){
+                usersToNotify.push({
+                    id: offer.user_id,
+                    message: 'Трафик по вашей подписке подошел к концу. Офрмите новую, чтобы продолжить 🔂'
+                })
+
+                break
+            }
+
+            //если трафик по подписке подходит к концу
+            if(traffic_balance <= untilData){
+                usersToNotify.push({
+                    id: offer.user_id,
+                    message: `Трафик по вашей подписке подходит к концу/n/n
+                    📶 Осталось: ${FormatBytes(traffic_balance)}/n/n
+                    <b>Не забудьте оформить новую, перед окончанием 🔂</b>
+                    `
+                });
+
+                break
+            }
+        }
 
         //уведомление пользователей об окончании подписки
         if(usersToNotify.length){
@@ -1115,8 +1162,8 @@ async function initTasks(){
         }
     });
 
-    //уведомление о проблемах с подключением
-    TimeShedular.NewTask('connection trouble', 10800000, async () => {
+    //уведомление о проблемах с подключением (каждые 4 часа)
+    TimeShedular.NewTask('connection trouble', 14400000, async () => {
 
         //получение всех заказов с подключением
         const activeOffers = await OFFER.FIND([[{

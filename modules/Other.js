@@ -12,6 +12,16 @@ function RandCode(length = 6) {
     return result;
 }
 
+function FormatBytes(bytes) {
+    if (bytes === 0) return '0 Б';
+  
+    const sizes = ['Б', 'Кб', 'Мб', 'Гб', 'Тб', 'Пб'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const formattedSize = (bytes / Math.pow(1024, i)).toFixed(2); // Округляем до 2 знаков после запятой
+  
+    return `${formattedSize} ${sizes[i]}`;
+  }
+
 // Ведение логов
 function WriteInLogFile(messageOrError){
 
@@ -42,4 +52,4 @@ function WriteInLogFile(messageOrError){
     }
 }
 
-module.exports = {Time, RandCode, WriteInLogFile};
+module.exports = {Time, RandCode, WriteInLogFile, FormatBytes};
