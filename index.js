@@ -377,6 +377,13 @@ app.get('/offer', async (req, res) => {
     catch(err){
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
+
+            // Обработка отсутствующих заказов (Добавить хост марзбана)
+            if(err.response.status === 404){
+                response.status(404, 'Действительные заявки не найдены');
+                return response.send();
+            }
+
             const statusCode = err.response.status;
             const errorMessage = err.response.data.detail;
             WriteInLogFile(new Error(`Marzban response on "Get Offer": ${statusCode} ${errorMessage}`));
@@ -746,6 +753,13 @@ app.patch('/recreate', async (req, res) => {
     catch(err){
         // Сервер вернул ответ с ошибкой (например, 4xx или 5xx)
         if (err.response) {
+
+            // Обработка отсутствующих заказов
+            if(err.response.status === 404){
+                response.status(404, 'Действительные заявки не найдены');
+                return response.send();
+            }
+
             const statusCode = err.response.status;
             const errorMessage = err.response.data.detail || err.response.data;
             WriteInLogFile(new Error(`Marzban response Or telegram error on "Reacreate": ${statusCode} ${errorMessage}`));
