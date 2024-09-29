@@ -1182,7 +1182,7 @@ async function initTasks(){
             }
         }
 
-        //рассылка рпиглашения на просмотр инстукрции
+        //рассылка рпиглашения на просмотр инструкции
         if(usersToNotify.length){
             await BotService.NOTIFY(usersToNotify);
         }
@@ -1191,9 +1191,9 @@ async function initTasks(){
     //уведомление о релакации в нидерланды (каждые 4 часа)
     TimeShedular.NewTask('releases', 14400000, async () => {
         const usersToNotify = await USER.FIND();
-        // for(let user of usersToNotify){
-            await BotService.NOTIFY([{
-                id: ADMIN_ID,
+        const notifyMessages = usersToNotify.map(user => {
+            return {
+                id: user.telegram_id,
                 withDefaultOptions: true,
                 message: `<b>Мы переехали в Нидерланды 🎉🎉🎉</b>/n/n
                 <b>Что это значит ❓</b>/n/n
@@ -1207,8 +1207,11 @@ async function initTasks(){
                 Если вы еще не подключились, выберите опцию "Как подключится" ниже/n/n<b>
                 💯 Вступайте к нам в группе <a href='https://t.me/kraken_team_project'>Kraken Team Project 🔱</a>, и участвуйте в розыгрыше подписок 🎁/n/n</b>
                 `
-            }]);
-        // }
+            }
+        });
+
+        //рассылка обновления
+        await BotService.NOTIFY(notifyMessages);
     });
 }
 
