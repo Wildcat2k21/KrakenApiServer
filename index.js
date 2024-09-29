@@ -358,7 +358,7 @@ app.get('/offer', async (req, res) => {
         //правка значения скидки
         const convPayDiscVal = nextPayDiscVal > 100 ? 100 : nextPayDiscVal;
 
-        // Формирование ответа
+        //формирование ответа
         response.body = {
             ...offerUser,
             usedTraffic: marzbanInfo.used_traffic,
