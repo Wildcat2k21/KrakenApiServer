@@ -1186,7 +1186,29 @@ async function initTasks(){
         if(usersToNotify.length){
             await BotService.NOTIFY(usersToNotify);
         }
+    });
 
+    //уведомление о релакации в нидерланды (каждые 4 часа)
+    TimeShedular.NewTask('releases', 14400000, async () => {
+        const usersToNotify = await USER.FIND();
+        // for(let user of usersToNotify){
+            await BotService.NOTIFY([{
+                id: ADMIN_ID,
+                withDefaultOptions: true,
+                message: `<b>Мы переехали в Нидерланды 🎉🎉🎉</b>/n/n
+                <b>Что это значит ❓</b>/n/n
+                ✔️ Торренты на максимальной скорости/n
+                🍿 Больше пиратских сайтов и кинотеатров/n
+                🏴‍☠️ Доступен Rutracker, Torrents, KickAssTorrent/n
+                💬 Замедление Ютюб ? Не не слышали/n
+                💻 Нейросети ChatGPT, BingAI, DELLEE/n
+                🍓 Сайты с клубничным контентом теперь доступны/n/n
+                Удалите старую подписку, получите новый QR-код в "Моя подписка"/n/n
+                Если вы еще не подключились, выберите опцию "Как подключится" ниже/n/n<b>
+                💯 Вступайте к нам в группе <a href='https://t.me/kraken_team_project'>Kraken Team Project 🔱</a>, и участвуйте в розыгрыше подписок 🎁/n/n</b>
+                `
+            }]);
+        // }
     });
 }
 
@@ -1240,7 +1262,7 @@ app.listen(PORT, '0.0.0.0', async () => {
 
     try{
         await initChanges();
-        console.log('База данных успешно изменена!!! 🍾');
+        console.log('Пользователи успешно восстановлены!!! 🍾');
     }
     catch(err){
         console.log('Не удалось изменить базу данных: ❌', err.response.data);
