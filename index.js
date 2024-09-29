@@ -341,8 +341,14 @@ app.get('/offer', async (req, res) => {
         // Информация о заказе в системе Marzban
         const marzbanInfo = await MarzbanAPI.GET_USER(username);
 
+        //расчет оставшегося трафика
+        const traffic_balance = marzbanInfo.data_limit - marzbanInfo.used_traffic;
+
+        // Расчет оставшегося трафика
+        const data_limit = traffic_balance <= 0 ? 0 : traffic_balance;
+
         //проверка окончания подписки и выставления флага об окончании
-        if(marzbanInfo.expire <= new Time().shortUnix()){
+        if(marzbanInfo.expire <= new Time().shortUnix() || (userMarzbanData.data_limit !== 0 && data_limit <= 1024)){
             offerUser.isExpired = true;
         }
 
@@ -673,14 +679,19 @@ app.patch('/recreate', async (req, res) => {
                 return response.send();
             }
 
+
+            //расчет оставшегося трафика
+            const traffic_balance = userMarzbanData.data_limit - userMarzbanData.used_traffic;
+
             // Расчет оставшегося трафика
-            const data_limit = userMarzbanData.data_limit - userMarzbanData.used_traffic;
+            const data_limit = traffic_balance <= 0 ? 0 : traffic_balance;
 
             //проверка истечения лимита
-            if(data_limit <= 0){
+            if(userMarzbanData.data_limit !== 0 && data_limit <= 1024){
                 response.status(403, 'ℹ️ У вас закончился трафик по подписке. Оформите новую в "Новая заявка"');
                 return response.send();
             }
+
 
             const expire = usersOffers[i].end_time;
 
@@ -1114,7 +1125,7 @@ async function initTasks(){
             const traffic_balance = marzbanUser.data_limit - marzbanUser.used_traffic;
 
             // Если трафик по подписке истек
-            if(traffic_balance <= 0){
+            if(traffic_balance <= 1024 && marzbanUser.data_limit !== 0){
                 usersToNotify.push({
                     id: offer.user_id,
                     message: 'Трафик по вашей подписке подошел к концу. Офрмите новую, чтобы продолжить 🔂'
