@@ -1255,13 +1255,11 @@ async function initChanges(){
     //восстановление пользователей
     for(let offer of actualOffers){
         const username = `${offer.sub_id}_${offer.offer_id}`;
-        const data_limit = (await SUB.FIND([[{field: 'name_id', exacly: offer.sub_id}]], true)).data_limit * 1024**3;
-        const expire = offer.end_time;
 
-        // const marzbanUser = await MarzbanAPI.GET_USER(username);
+        const marzbanUser = await MarzbanAPI.GET_USER(username);
 
-        // //uptate entry offer, column conn_string set hello
-        // await OFFER.UPDATE(offer.offer_id, {conn_string: marzbanUser.links[0]});
+        //uptate entry offer, column conn_string set hello
+        db.executeNoDataReturning(`UPDATE offer SET conn_string = '${marzbanUser.links[0]}' WHERE offer_id = ${offer.offer_id}`);
 
         console.log(`\'${username}\',`);
     }
