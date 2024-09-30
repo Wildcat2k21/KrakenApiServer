@@ -342,14 +342,11 @@ app.get('/offer', async (req, res) => {
         // Информация о заказе в системе Marzban
         const marzbanInfo = await MarzbanAPI.GET_USER(username);
 
-        //расчет оставшегося трафика
-        const traffic_balance = marzbanInfo.data_limit - marzbanInfo.used_traffic;
-
         // Расчет оставшегося трафика
-        const data_limit = traffic_balance <= 0 ? 0 : traffic_balance;
+        const data_limit = !marzbanInfo.data_limit ? null : marzbanInfo.data_limit - marzbanInfo.used_traffic;
 
         //проверка окончания подписки и выставления флага об окончании
-        if(marzbanInfo.expire <= new Time().shortUnix() || (marzbanInfo.data_limit !== 0 && data_limit <= 1024)){
+        if(marzbanInfo.expire <= new Time().shortUnix() || (data_limit && data_limit <= 1024)){
             offerUser.isExpired = true;
         }
 
@@ -668,7 +665,7 @@ app.patch('/recreate', async (req, res) => {
 
         // Информировать об отсутстви действительных заявок для пользователей
         if(!usersOffers.length){
-            response.status(404, 'Нет действительных заявок');
+            response.status(404, 'Действительные заявки не найдены');
             return response.send();
         }
 
@@ -687,19 +684,14 @@ app.patch('/recreate', async (req, res) => {
                 return response.send();
             }
 
-
             //расчет оставшегося трафика
-            const traffic_balance = userMarzbanData.data_limit - userMarzbanData.used_traffic;
-
-            // Расчет оставшегося трафика
-            const data_limit = traffic_balance <= 0 ? 0 : traffic_balance;
+            const data_limit = !userMarzbanData.data_limit ? null : userMarzbanData.data_limit - userMarzbanData.used_traffic;
 
             //проверка истечения лимита
-            if(userMarzbanData.data_limit !== 0 && data_limit <= 1024){
+            if(data_limit && data_limit <= 1024){
                 response.status(403, 'ℹ️ У вас закончился трафик по подписке. Оформите новую в "Новая заявка"');
                 return response.send();
             }
-
 
             const expire = usersOffers[i].end_time;
 
@@ -1145,10 +1137,10 @@ async function initTasks(){
             const marzbanUser = await MarzbanAPI.GET_USER(username);
 
             //расчет трафика
-            const traffic_balance = marzbanUser.data_limit - marzbanUser.used_traffic;
+            const traffic_balance = !marzbanUser.data_limit ? null : marzbanUser.data_limit - marzbanUser.used_traffic;
 
             // Если трафик по подписке истек
-            if(traffic_balance <= 1024 && marzbanUser.data_limit !== 0){
+            if(traffic_balance && traffic_balance <= 1024){
                 usersToNotify.push({
                     id: offer.user_id,
                     message: 'Трафик по вашей подписке подошел к концу. Офрмите новую, чтобы продолжить 🔂'
@@ -1158,7 +1150,7 @@ async function initTasks(){
             }
 
             //если трафик по подписке подходит к концу
-            if(traffic_balance <= untilData){
+            if(marzbanUser.data_limit && traffic_balance <= untilData){
                 usersToNotify.push({
                     id: offer.user_id,
                     message: `Трафик по вашей подписке подходит к концу/n/n
