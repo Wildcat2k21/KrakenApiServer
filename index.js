@@ -1177,8 +1177,8 @@ async function initTasks(){
         }
     });
 
-    //уведомление о проблемах с подключением (каждые 4 часа)
-    TimeShedular.NewTask('connection trouble', 14400000, async () => {
+    //уведомление о проблемах с подключением (каждые 6 часа)
+    TimeShedular.NewTask('connection trouble', 21600000, async () => {
 
         //получение всех заказов с подключением
         const activeOffers = await OFFER.FIND([[{
@@ -1222,8 +1222,8 @@ async function initTasks(){
         }
     });
 
-    //уведомление о релакации в нидерланды (каждые 4 часа)
-    TimeShedular.NewTask('releases', 14400000, async () => {
+    //уведомление о релакации в нидерланды (каждые 24 часа)
+    TimeShedular.NewTask('releases', 86400000, async () => {
         const usersToNotify = await USER.FIND();
         const notifyMessages = usersToNotify.map(user => {
             return {
