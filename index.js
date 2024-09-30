@@ -1259,7 +1259,7 @@ async function initChanges(){
         const marzbanUser = await MarzbanAPI.GET_USER(username);
 
         //uptate entry offer, column conn_string set hello
-        db.executeNoDataReturning(`UPDATE offer SET conn_string = '${marzbanUser.links[0]}' WHERE offer_id = ${offer.offer_id}`);
+        await OFFER.UPDATE(offer.offer_id, {conn_string: marzbanUser.links[0]});
 
         console.log(`\'${username}\',`);
     }
