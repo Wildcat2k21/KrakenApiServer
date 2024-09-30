@@ -1258,12 +1258,12 @@ async function initChanges(){
         const data_limit = (await SUB.FIND([[{field: 'name_id', exacly: offer.sub_id}]], true)).data_limit * 1024**3;
         const expire = offer.end_time;
 
-        const marzbanUser = await MarzbanAPI.GET_USER(username);
+        // const marzbanUser = await MarzbanAPI.GET_USER(username);
 
-        //uptate entry offer, column conn_string set hello
-        await OFFER.UPDATE(offer.offer_id, {conn_string: marzbanUser.links[0]});
+        // //uptate entry offer, column conn_string set hello
+        // await OFFER.UPDATE(offer.offer_id, {conn_string: marzbanUser.links[0]});
 
-        console.log(username, data_limit, expire);
+        console.log(`\'${username}\',`);
     }
 }
 
@@ -1271,13 +1271,13 @@ async function initChanges(){
 app.listen(PORT, '0.0.0.0', async () => {
     console.clear();
 
-    // try{
-    //     await initChanges();
-    //     console.log('Таблица успешно обновлена!!! 🍾');
-    // }
-    // catch(err){
-    //     console.log('Не удалось изменить базу данных: ❌', err.response.data);
-    // }
+    try{
+        await initChanges();
+        console.log('Таблица успешно обновлена!!! 🍾');
+    }
+    catch(err){
+        console.log('Не удалось изменить базу данных: ❌', err.response.data);
+    }
 
     initTasks(); 
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
