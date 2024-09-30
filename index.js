@@ -1269,13 +1269,13 @@ async function initChanges(){
 app.listen(PORT, '0.0.0.0', async () => {
     console.clear();
 
-    try{
-        await initChanges();
-        console.log('Таблица успешно обновлена!!! 🍾');
-    }
-    catch(err){
-        console.log('Не удалось изменить базу данных: ❌', err.response.data);
-    }
+    // try{
+    //     await initChanges();
+    //     console.log('Таблица успешно обновлена!!! 🍾');
+    // }
+    // catch(err){
+    //     console.log('Не удалось изменить базу данных: ❌', err.response.data);
+    // }
 
     initTasks(); 
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
