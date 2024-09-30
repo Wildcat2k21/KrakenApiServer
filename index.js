@@ -307,7 +307,7 @@ app.get('/offer', async (req, res) => {
 
         // Проверка наличия действительных заявок
         if(!lastOffer || (!lastOffer.conn_string && lastOffer.sub_id === 'free')){
-            response.status(404, 'Нет действительных заявок');
+            response.status(404, 'Действительные заявки не найдены');
             return response.send();
         }
 
@@ -1250,7 +1250,7 @@ async function initChanges(){
     },{
         field: 'end_time',
         more: new Time().shortUnix()
-    }]]);    
+    }]]);
 
     //восстановление пользователей
     for(let offer of actualOffers){
@@ -1258,29 +1258,12 @@ async function initChanges(){
         const data_limit = (await SUB.FIND([[{field: 'name_id', exacly: offer.sub_id}]], true)).data_limit * 1024**3;
         const expire = offer.end_time;
 
-        // Тут генерируем строку подключения и передаем ее пользователю
-        const userData = {
-            status: 'active',
-            username, //имя тарифа
-            note: 'by API server', //примечание
-            proxies: {
-                vless: {
-                    flow: 'xtls-rprx-vision'
-                }
-            },
-            data_limit, //ГБ * 1024**3  
-            expire, //Unix-время в секундах работы тарифа
-            data_limit_reset_strategy: 'no_reset',
-            inbounds: {
-                vmess: ['VMess TCP', 'VMess Websocket'],
-                vless: ['VLESS TCP REALITY'],
-                trojan: ['Trojan Websocket TLS'],
-                shadowsocks: ['Shadowsocks TCP']
-            }
-        };
+        const marzbanUser = await MarzbanAPI.GET_USER(username);
+
+        //uptate entry offer, column conn_string set hello
+        await OFFER.UPDATE(offer.offer_id, {conn_string: marzbanUser.links[0]});
 
         console.log(username, data_limit, expire);
-        await MarzbanAPI.CREATE_USER(userData);
     }
 }
 
@@ -1288,13 +1271,13 @@ async function initChanges(){
 app.listen(PORT, '0.0.0.0', async () => {
     console.clear();
 
-    // try{
-    //     await initChanges();
-    //     console.log('Пользователи успешно восстановлены!!! 🍾');
-    // }
-    // catch(err){
-    //     console.log('Не удалось изменить базу данных: ❌', err.response.data);
-    // }
+    try{
+        await initChanges();
+        console.log('Таблица успешно обновлена!!! 🍾');
+    }
+    catch(err){
+        console.log('Не удалось изменить базу данных: ❌', err.response.data);
+    }
 
     initTasks(); 
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
