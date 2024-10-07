@@ -1066,7 +1066,7 @@ function databaseErrorHandler(err, response){
 async function initTasks(){
 
     //Поддержка проекта (каждые 48 часов)
-    TimeShedular.NewTask('notification', 172800000, async () => {
+    TimeShedular.NewTask('notification', 1209600000, async () => {
 
         //получение всех пользователей для рассылки
         const users = await USER.FIND();
@@ -1169,8 +1169,8 @@ async function initTasks(){
         }
     });
 
-    //уведомление о проблемах с подключением (каждые 6 часа)
-    TimeShedular.NewTask('connection trouble', 21600000, async () => {
+    //уведомление о проблемах с подключением (каждую неделю)
+    TimeShedular.NewTask('connection trouble', 604800000, async () => {
 
         //получение всех заказов с подключением
         const activeOffers = await OFFER.FIND([[{
@@ -1214,8 +1214,8 @@ async function initTasks(){
         }
     });
 
-    //уведомление о релакации в нидерланды (каждые 24 часа)
-    TimeShedular.NewTask('releases', 86400000, async () => {
+    //уведомление о релакации в нидерланды (каждые 2 недели)
+    TimeShedular.NewTask('releases', 1209600000, async () => {
         const usersToNotify = await USER.FIND();
         const notifyMessages = usersToNotify.map(user => {
             return {
@@ -1229,8 +1229,7 @@ async function initTasks(){
                 💬 Замедление Ютюб ? Не не слышали/n
                 💻 Нейросети ChatGPT, BingAI, DELLEE/n
                 🍓 Сайты с клубничным контентом теперь доступны/n/n
-                Удалите старую подписку, получите новый QR-код в "Моя подписка"/n/n
-                Если вы еще не подключились, выберите опцию "Как подключится" ниже/n/n<b>
+                Если вы еще не подключились, выберите опцию "Как подключиться" ниже/n/n<b>
                 💯 Вступайте к нам в группе <a href='https://t.me/kraken_team_project'>Kraken Team Project 🔱</a>, и участвуйте в розыгрыше подписок 🎁/n/n</b>
                 `
             }
