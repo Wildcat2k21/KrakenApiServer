@@ -52,19 +52,23 @@ VALUES ('free', 'Бесплатная', 5, 2592000, 0, 0);
 
 -- Вставка подписки "Free Trial"
 INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
-VALUES ('light', 'Лайт', 20, 2592000, 100, 1);
+VALUES ('light', 'Лайт', 25, 2592000, 100, 1);
 
 -- Вставка подписки "Free Trial"
 INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
-VALUES ('personal', 'Персональный', 60, 2592000, 190, 1);
+VALUES ('light_plus', 'Лайт плюс', 50, 2592000, 150, 1);
 
 -- Вставка подписки "Free Trial"
 INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
-VALUES ('family', 'Семейный', 300, 2592000, 500, 1);
+VALUES ('personal', 'Персональный', 100, 2592000, 200, 1);
+
+-- Вставка подписки "Free Trial"
+INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
+VALUES ('family', 'Семейный', 300, 2592000, 300, 1);
 
 -- Вставка подписки "Basic"
 INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
-VALUES ('basic', 'Безлимит', 0, 2592000 , 1000, 1);
+VALUES ('basic', 'Безлимит', 0, 2592000 , 500, 1);
 
 --- промокоды ---
 

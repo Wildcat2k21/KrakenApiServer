@@ -1241,39 +1241,28 @@ async function initTasks(){
 
 
 async function initChanges(){
-    //получение актуальных пользователей
-    const actualOffers = await OFFER.FIND([[{
-        field: 'conn_string',
-        isNull: false
-    },{
-        field: 'end_time',
-        more: new Time().shortUnix()
-    }]]);
 
-    //восстановление пользователей
-    for(let offer of actualOffers){
-        const username = `${offer.sub_id}_${offer.offer_id}`;
+    //change entry with name light set data_limit 25
+    await db.executeNoDataReturning(`UPDATE sub SET data_limit = 25 WHERE name_id = 'light'`);
 
-        const marzbanUser = await MarzbanAPI.GET_USER(username);
+    //update sub with name_id personal set price 200
+    await db.executeNoDataReturning(`UPDATE sub SET price = 200 WHERE name_id = 'personal'`);
 
-        //uptate entry offer, column conn_string set hello
-        await OFFER.UPDATE(offer.offer_id, {conn_string: marzbanUser.links[0]});
-
-        console.log(`\'${username}\',`);
-    }
+    //new sub
+    await db.executeNoDataReturning(`INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) VALUES ('light_plus', 'Лайт плюс', 50, 2592000, 150, 1);`);
 }
 
 // Запуск сервера на указанном порту
 app.listen(PORT, '0.0.0.0', async () => {
     console.clear();
 
-    // try{
-    //     await initChanges();
-    //     console.log('Таблица успешно обновлена!!! 🍾');
-    // }
-    // catch(err){
-    //     console.log('Не удалось изменить базу данных: ❌', err.response.data);
-    // }
+    try{
+        await initChanges();
+        console.log('Таблица успешно обновлена!!! 🍾');
+    }
+    catch(err){
+        console.log('Не удалось изменить базу данных: ❌', err.response.data);
+    }
 
     initTasks(); 
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
