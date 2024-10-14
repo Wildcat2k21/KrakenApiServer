@@ -353,17 +353,14 @@ app.get('/offer', async (req, res) => {
         //правка значения скидки
         const convPayDiscVal = nextPayDiscVal > 100 ? 100 : nextPayDiscVal;
 
-        //расчет трафика с учетом обновления кода
-        const gbDataLimit = marzbanInfo.data_limit / 1024**3;
-
         //разница лимита подписки и трафика пользователя
         const limitDiffrence = (marzbanInfo.data_limit - offerSub.data_limit * 1024**3) ? true : false;
 
         //формирование ответа
         response.body = {
             subName: offerSub.title,
-            usedTraffic: marzbanInfo.used_traffic.toFixed(),
-            subDataGBLimit: gbDataLimit,
+            usedTraffic: marzbanInfo.used_traffic,
+            subDataGBLimit: marzbanInfo.data_limit,
             subDateLimit: new Time(marzbanInfo.expire).fromUnix(true),
             createdDate: new Time(lastOffer.created_date).fromUnix(true),
             inviteCode: user.invite_code,
