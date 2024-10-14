@@ -362,7 +362,7 @@ app.get('/offer', async (req, res) => {
         //формирование ответа
         response.body = {
             subName: offerSub.title,
-            usedTraffic: marzbanInfo.used_traffic,
+            usedTraffic: marzbanInfo.used_traffic.toFixed(),
             subDataGBLimit: gbDataLimit,
             subDateLimit: new Time(marzbanInfo.expire).fromUnix(true),
             createdDate: new Time(lastOffer.created_date).fromUnix(true),
