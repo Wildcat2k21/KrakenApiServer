@@ -317,7 +317,7 @@ app.get('/offer', async (req, res) => {
         }]], true);
         
         // Информация о подписке
-        const offerUser = {
+        const wairingoffer = {
             subName: offerSub.title,
             subDataGBLimit: offerSub.data_limit, //1024**3
             subDateLimit: offerSub.date_limit
@@ -325,7 +325,7 @@ app.get('/offer', async (req, res) => {
 
         // Обработка зкаказа как "Ожидающий"
         if(!lastOffer.conn_string){
-            response.body = offerUser;
+            response.body = wairingoffer;
             return response.send();
         }
 
@@ -345,9 +345,7 @@ app.get('/offer', async (req, res) => {
         const data_limit = !marzbanInfo.data_limit ? null : marzbanInfo.data_limit - marzbanInfo.used_traffic;
 
         //проверка окончания подписки и выставления флага об окончании
-        if(marzbanInfo.expire <= new Time().shortUnix() || (data_limit && data_limit <= 1024)){
-            offerUser.isExpired = true;
-        }
+        const isExpired = (marzbanInfo.expire <= new Time().shortUnix() || (data_limit && data_limit <= 1024)) ? true : false;
 
         //скидка на следующую оплату
         const nextPayDiscVal = user.invite_count * config.invite_discount;
@@ -355,17 +353,26 @@ app.get('/offer', async (req, res) => {
         //правка значения скидки
         const convPayDiscVal = nextPayDiscVal > 100 ? 100 : nextPayDiscVal;
 
+        //расчет трафика с учетом обновления кода
+        const gbDataLimit = marzbanInfo.data_limit / 1024**3;
+
+        //разница лимита подписки и трафика пользователя
+        const limitDiffrence = (marzbanInfo.data_limit - offerSub.data_limit * 1024**3) ? true : false;
+
         //формирование ответа
         response.body = {
-            ...offerUser,
+            subName: offerSub.title,
             usedTraffic: marzbanInfo.used_traffic,
+            subDataGBLimit: gbDataLimit,
             subDateLimit: new Time(marzbanInfo.expire).fromUnix(true),
             createdDate: new Time(lastOffer.created_date).fromUnix(true),
             inviteCode: user.invite_code,
             userInviteCount: user.invite_count,
             nextPayDiscount: convPayDiscVal,
             price: offerSub.price,
-            connString: marzbanInfo.links[0]
+            connString: marzbanInfo.links[0],
+            limitDiffrence,
+            isExpired
         };
 
         response.send();
