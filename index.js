@@ -17,7 +17,6 @@ const TimeShedular = require('./modules/TimeShedular.js');
 
 // Конфигурация
 let config = require('./config.json');
-const { isNull } = require('util');
 
 //основаная конфигурация
 const PORT = process.env.PORT || 4015;
