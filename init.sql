@@ -82,4 +82,8 @@ VALUES ('ytube', '#НезамедлительноЮтюб', 5);
 
 -- Вставка промокода &9%D0T
 INSERT INTO promo (name_id, title, discount) 
+VALUES ('0942hmR3', '#КакПоРефералке', 50);
+
+-- Вставка промокода &9%D0T
+INSERT INTO promo (name_id, title, discount) 
 VALUES ('&9%D0T', '#ЗнаюРазработчика', 50);
