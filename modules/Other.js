@@ -26,7 +26,7 @@ function FormatBytes(bytes) {
 function WriteInLogFile(messageOrError){
 
     // Информация для лога
-    const time = new Time().fromUnix(true);
+    const time = new Time().toFormattedString();
     const isError = (messageOrError instanceof Error);
     let logClause = '', detailClause = '', messageLog = '';
 

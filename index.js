@@ -245,6 +245,7 @@ app.post('/offer', async (req, res) => {
         await BotService.NOTIFY([{
             id: ADMIN_ID,
             message: `Новый заказ от: "${offerDetails._user.nickname}" 👤/n
+            На подписку: "${offerDetails._sub.name_id}"/n
             Телеграм: @${offerDetails._user.telegram}/n/n
             К оплате: ${offerDetails.toPay} ₽
             `,
@@ -318,6 +319,7 @@ app.get('/offer', async (req, res) => {
         
         // Информация о подписке
         const wairingoffer = {
+            offerId: lastOffer.offer_id,
             subName: offerSub.title,
             subDataGBLimit: offerSub.data_limit, //1024**3
             subDateLimit: offerSub.date_limit
@@ -361,8 +363,8 @@ app.get('/offer', async (req, res) => {
             subName: offerSub.title,
             usedTraffic: marzbanInfo.used_traffic,
             subDataGBLimit: marzbanInfo.data_limit,
-            subDateLimit: new Time(marzbanInfo.expire).fromUnix(true),
-            createdDate: new Time(lastOffer.created_date).fromUnix(true),
+            subDateLimit: marzbanInfo.expire,
+            createdDate: lastOffer.created_date,
             inviteCode: user.invite_code,
             userInviteCount: user.invite_count,
             nextPayDiscount: convPayDiscVal,
@@ -1125,7 +1127,7 @@ async function initTasks(){
             if(timeNow + untilTime >= offer.end_time){
                 usersToNotify.push({
                     id: offer.user_id,
-                    message: `Срок действия вашей подписки подходит к концу/n/n📅 ${new Time(offer.end_time).fromUnix(true)}/n/n
+                    message: `Срок действия вашей подписки подходит к концу/n/n📅 ${new Time(offer.end_time).toFriendlyString()}/n/n
                     <b>Не забудьте оформить новую, перед ее окончанием 🔂</b>
                     `
                 })

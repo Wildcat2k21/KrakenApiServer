@@ -3,14 +3,12 @@ require('dotenv').config();
 
 // Переменные для хранения чувствительных данных
 const MARZBAN_URL = process.env.MARZBAN_URL;
-const USERNAME = process.env.USERNAME;
-const PASSWORD = process.env.PASSWORD;
+const USERNAME = process.env.MRZ_USERNAME;
+const PASSWORD = process.env.MRZ_PASSWORD;
 
 class MarzbanAPI {
-
     // Метод для получения токена авторизации
     static async GET_AUTH_TOKEN() {
-        
         const boundary = '---------------------------';
         // Формируем тело запроса с использованием boundary
         let body = `
