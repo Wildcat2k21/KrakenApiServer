@@ -321,7 +321,7 @@ app.get('/offer', async (req, res) => {
         const wairingoffer = {
             offerId: lastOffer.offer_id,
             subName: offerSub.title,
-            subDataGBLimit: offerSub.data_limit, //1024**3
+            subDataGBLimit: offerSub.data_limit,
             subDateLimit: offerSub.date_limit
         };
 
@@ -362,7 +362,8 @@ app.get('/offer', async (req, res) => {
         response.body = {
             subName: offerSub.title,
             usedTraffic: marzbanInfo.used_traffic,
-            subDataGBLimit: marzbanInfo.data_limit,
+            dataLimit: marzbanInfo.data_limit,
+            subDataGBLimit: offerSub.data_limit,
             subDateLimit: marzbanInfo.expire,
             createdDate: lastOffer.created_date,
             inviteCode: user.invite_code,
