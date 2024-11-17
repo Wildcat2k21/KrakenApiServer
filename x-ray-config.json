@@ -1,0 +1,72 @@
+{
+    "up": 0,
+    "down": 0,
+    "total": 0,
+    "remark": "Made By Kraken 🔱",
+    "enable": true,
+    "expiryTime": 0,
+    "listen": "",
+    "port": 28000,
+    "protocol" : "vless",
+    "settings": {
+        "clients": [],
+        "decryption": "none",
+        "fallbacks": []
+    },
+    "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "externalProxy": [],
+        "realitySettings": {
+            "show": false,
+            "xver": 0,
+            "dest": "zoom.us:443",
+            "serverNames": [
+                "zoom.us",
+                "www.zoom.com"
+            ],
+            "privateKey": "aLNiyUZ7pGjQ_WKzgB93aytQGkiUYbDkS4YnlUBqdHg",
+            "minClient": "",
+            "maxClient": "",
+            "maxTimediff": 0,
+            "shortIds": [
+                "db2b726217b1",
+                "b1f9",
+                "725b71f9a0fd20",
+                "46",
+                "50ed8db70c7bcffe",
+                "0d0375",
+                "a7150311ec",
+                "66a56afc"
+            ],
+            "settings": {
+                "publicKey": "aH_qicK2bPQi_1oWhNelsdINoJ3wakVyFFrkhpEyVgA",
+                "fingerprint": "firefox",
+                "serverName": "",
+                "spiderX": "/"
+            }
+        },
+        "tcpSettings": {
+            "acceptProxyProtocol": false,
+            "header": {
+            "type": "none"
+            }
+        }
+    },
+    "sniffing": {
+        "enabled": false,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic",
+          "fakedns"
+        ],
+        "metadataOnly": false,
+        "routeOnly": false
+    },
+    "allocate":{
+        "strategy": "always",
+        "refresh": 5,
+        "concurrency": 3
+    }
+}

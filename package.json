@@ -1,0 +1,29 @@
+{
+  "name": "morzban-client",
+  "version": "1.0.0",
+  "description": "private VPN",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Marzban",
+    "TelegramBot"
+  ],
+  "type": "module",
+  "author": "wildcat2k21",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.4",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "fetch-cookie": "^3.0.1",
+    "nanoid": "^5.0.8",
+    "node-fetch": "^3.3.2",
+    "node-telegram-bot-api": "^0.66.0",
+    "qrcode": "^1.5.4",
+    "sqlite3": "^5.1.7",
+    "tough-cookie": "^5.0.0",
+    "uuid": "^11.0.3"
+  }
+}
