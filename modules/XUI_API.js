@@ -16,7 +16,7 @@ const {WriteInLogFile} = Other;
 
 //получение переменных
 const {XUI_DASHBOARD_URL, XUI_ADMIN_LOGIN, XUI_ADMIN_PASSWD, XUI_BASE_SUB_PORT} =  process.env;
-const XUI_IP_ADDR = XUI_DASHBOARD_URL.match(/\d+\.\d+\.\d+\.\d+/)[0];
+const XUI_IP_ADDR = process.env.XUI_IP_ADDR;
 
 //получение кук
 const jar = new CookieJar();
