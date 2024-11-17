@@ -1269,7 +1269,7 @@ app.listen(PORT, '0.0.0.0', async () => {
     //очистка консоли
     console.clear();
 
-    const config = JSON.parse(await fs.readFile(new URL('./config.json', import.meta.url)));
+    config = JSON.parse(await fs.readFile(new URL('./config.json', import.meta.url)));
 
     //инициализация XUI API
     await XUI_API.InitXrayConfig();
