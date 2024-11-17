@@ -1281,7 +1281,7 @@ app.listen(PORT, '0.0.0.0', async () => {
     await XUI_API.InitXrayConfig();
 
     //восстановление пользователей
-    // await repairClients();
+    await repairClients();
 
     initTasks(); 
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
