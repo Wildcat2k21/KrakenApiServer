@@ -122,9 +122,9 @@ class XUI_API{
         config.port = Number(XUI_BASE_SUB_PORT);
 
         //установка коротких id
-        config.streamSettings.realitySettings.shortIds = [
-            0, 0, 0, 0, 0, 0, 0, 0 
-        ].map(_ => nanoid(Math.ceil(Math.random() * 13) + 3));
+        // config.streamSettings.realitySettings.shortIds = [
+        //     0, 0, 0, 0, 0, 0, 0, 0 
+        // ].map(_ => nanoid(Math.ceil(Math.random() * 13) + 3));
 
         //преобразование параметров в строку
         const stringConfigParam = Object.keys(config).map(key => `${key}=${typeof config[key] === 'object' ? encodeURIComponent(JSON.stringify(config[key], null, 2)) : config[key]}`).join('&')
