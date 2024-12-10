@@ -1227,42 +1227,6 @@ async function initTasks(){
     });
 }
 
-async function repairClients(){
-    //получение всех заказов с подключением
-    const activeOffers = await OFFER.FIND([[{
-        field : 'conn_string',
-        isNull: false
-    }, {
-        field : 'end_time',
-        exaclyMore: new Time().shortUnix()
-    }]]);
-
-    //восстановление пользователей
-    for(let client of activeOffers){
-
-        //имя пользователя для восстановления
-        const userEmail = `${client.sub_id}_${client.offer_id}`;
-
-        //получение трафика по подписке
-        const userSub = await SUB.FIND([[{
-            field : 'name_id',
-            exacly: client.sub_id
-        }]], true);
-
-        //данные для восстановления
-        const repairData = {
-            email: userEmail,
-            totalGB: userSub.data_limit * 1024 ** 3,
-            expiryTime: client.end_time * 1000
-        }
-
-        await XUI_API.CreateUser(repairData);
-        console.log('Пользователь восстановлен:', userEmail);
-    }
-
-    console.log('Все пользователи восстановлены 🎉');
-}
-
 // Запуск сервера на указанном порту
 app.listen(PORT, '0.0.0.0', async () => {
 
@@ -1273,9 +1237,6 @@ app.listen(PORT, '0.0.0.0', async () => {
 
     //инициализация XUI API
     await XUI_API.InitXrayConfig();
-
-    // //восстановление пользователей
-    // await repairClients();
 
     initTasks(); 
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
