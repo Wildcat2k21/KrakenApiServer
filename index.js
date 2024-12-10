@@ -339,7 +339,7 @@ app.get('/offer', async (req, res) => {
         const dataResult = await XUI_API.GetUser(username)
         const marzbanInfo = dataResult[0];
 
-        console.log(555);
+        console.log(dataResult);
 
         // Проверка наличия информации
         if(!marzbanInfo){
