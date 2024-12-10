@@ -78,7 +78,7 @@ INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo)
 VALUES ('person', 'Личный', 100, 2592000 , 150, 1);
 
 INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
-VALUES ('biglim', 'Личный', 200, 2592000 , 250, 1);
+VALUES ('biglim', 'Повышенный', 200, 2592000 , 250, 1);
 
 --- промокоды ---
 
