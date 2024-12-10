@@ -283,8 +283,6 @@ app.get('/offer', async (req, res) => {
     const response = new Response(res);
     const telegram_id = Number(req.query.telegram_id);
 
-    console.log(123);
-
     // Проверка входных данных
     if(typeof telegram_id !== 'number' || isNaN(telegram_id)){
         response.status(417, 'Не передан telegram_id');
@@ -333,13 +331,9 @@ app.get('/offer', async (req, res) => {
         // Название пользователя
         const username = `${lastOffer.sub_id}_${lastOffer.offer_id}`;
 
-        console.log(444);
-
         // Информация о заказе в системе Marzban
         const dataResult = await XUI_API.GetUser(username)
         const marzbanInfo = dataResult[0];
-
-        console.log(dataResult);
 
         // Проверка наличия информации
         if(!marzbanInfo){
@@ -378,7 +372,6 @@ app.get('/offer', async (req, res) => {
             isExpired
         };
 
-        console.log(666);
         response.send();
 
     }
