@@ -169,7 +169,7 @@ class XUI_API{
                     id: uuidv4(),
                     flow: "xtls-rprx-vision",
                     email,
-                    limitIp: 1,
+                    limitIp: 0,
                     totalGB,
                     expiryTime,
                     enable: true,

@@ -71,8 +71,14 @@ CREATE TABLE offer (
 -- VALUES ('basic', 'Безлимит', 0, 2592000 , 500, 1);
 
 -- Вставка подписки "Basic"
+-- INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
+-- VALUES ('basic', 'Безлимит', 0, 2592000 , 300, 1);
+
 INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
-VALUES ('basic', 'Безлимит', 0, 2592000 , 150, 1);
+VALUES ('person', 'Личный', 100, 2592000 , 150, 1);
+
+INSERT INTO sub (name_id, title, data_limit, date_limit, price, with_promo) 
+VALUES ('biglim', 'Личный', 200, 2592000 , 250, 1);
 
 --- промокоды ---
 
