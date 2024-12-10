@@ -283,6 +283,8 @@ app.get('/offer', async (req, res) => {
     const response = new Response(res);
     const telegram_id = Number(req.query.telegram_id);
 
+    console.log(123);
+
     // Проверка входных данных
     if(typeof telegram_id !== 'number' || isNaN(telegram_id)){
         response.status(417, 'Не передан telegram_id');
