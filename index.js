@@ -333,9 +333,13 @@ app.get('/offer', async (req, res) => {
         // Название пользователя
         const username = `${lastOffer.sub_id}_${lastOffer.offer_id}`;
 
+        console.log(444);
+
         // Информация о заказе в системе Marzban
         const dataResult = await XUI_API.GetUser(username)
         const marzbanInfo = dataResult[0];
+
+        console.log(555);
 
         // Проверка наличия информации
         if(!marzbanInfo){
