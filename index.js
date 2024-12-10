@@ -378,6 +378,7 @@ app.get('/offer', async (req, res) => {
             isExpired
         };
 
+        console.log(666);
         response.send();
 
     }
