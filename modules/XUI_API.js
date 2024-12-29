@@ -158,12 +158,8 @@ class XUI_API{
 
         if(!this.inboundId) throw new Error("Подключение не инициализировано ❗️");
 
-        console.log(7);
-
         //авторизация
         await this.MakeAuthRequest();
-
-        console.log(8);
 
         //объект пользователя
         const userObject = {
@@ -184,8 +180,6 @@ class XUI_API{
             }
         }
 
-        console.log(9);
-
         //преобразование параметров в строку
         const stringUserParam = Object.keys(userObject).map(param => `${param}=${encodeURIComponent(JSON.stringify(userObject[param], null, 2))}`).join('&');
 
@@ -198,27 +192,19 @@ class XUI_API{
             body: stringUserParam
         });
 
-        console.log(10);
-
         const data = await response.json();
 
         if(!data.success) throw new Error(`Ошибка при создании пользователя "${email}" ❗️`);
 
-        console.log(11);
-
         //возвращаем созданного пользователя
         WriteInLogFile(`Пользователь "${email}" создан 🎉`);
         const thisClient = await this.GetUser(email);
-
-        console.log(12);
 
         return thisClient[0];
     }
 
     //создание строки подключения пользователя
     static CreateConnection = (client, streamSettings, protocol, port, remark) => {
-
-        console.log(19);
 
         //параметры строки подключения
         const connectionParams = {
@@ -234,7 +220,6 @@ class XUI_API{
         //создани строки подключения
         const connection = `${protocol}://${client.id}@${XUI_IP_ADDR}:${port}?type=${streamSettings.network}&${Object.keys(connectionParams).map(key => `${key}=${encodeURIComponent(connectionParams[key])}`).join('&')}#${encodeURI(`${remark} - ${client.email}`)}`;
 
-        console.log(20);
         return connection;
     }
 
@@ -243,27 +228,18 @@ class XUI_API{
 
         if(!this.inboundId) throw new Error("Подключение не инициализировано ❗️");
 
-        console.log(13);
-
         //авторизация
         await this.MakeAuthRequest();
 
-        console.log(14);
-
         //получение списка пользователей
         const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/inbound/list`, {
-            credentials: "include",
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
         });
 
-        console.log(15);
-
         const data = await response.json();
-
-        console.log(16);
 
         //проверка условия возврата пользователей
         if(data.success){
@@ -279,8 +255,6 @@ class XUI_API{
                 //информация о конкретном пользователе
                 const current = clients.find(c => c.email === email);
 
-                console.log(17);
-
                 return data.obj[0].clientStats.filter(client => client.email === email).map(client => ({
                     email: client.email,
                     data_limit: client.total,
@@ -295,8 +269,6 @@ class XUI_API{
             return data.obj[0].clientStats.map(client => {
 
                 const current = clients.find(c => c.email === client.email);
-
-                console.log(18);
 
                 return {
                     email: client.email, //имя пользователя

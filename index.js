@@ -917,17 +917,11 @@ async function confirmOffer(offerInfo, response){
             await OFFER.DELETE(oldOffer.offer_id);
         }
 
-        console.log(0);
-
         // Создаем нового пользователя
         const requestData = await XUI_API.CreateUser({email: username, totalGB: data_limit, expiryTime: expire * 1000});
 
-        console.log(1);
-
         // Установка текста подписки пользователя и отметка что был заказ
         await OFFER.UPDATE(offerInfo._offer.offer_id, {conn_string: requestData.connection_string});
-        
-        console.log(2);
 
         // Параметры для обновления пользователя
         let userUpdateOptions;
@@ -939,8 +933,6 @@ async function confirmOffer(offerInfo, response){
         if(offerInfo._user.invite_count){
             userUpdateOptions = {...userUpdateOptions, invite_count: 0};
         }
-
-        console.log(3);
 
         // Обновление пользователя
         if(userUpdateOptions) await USER.UPDATE(offerInfo._user.telegram_id, userUpdateOptions);
@@ -954,8 +946,6 @@ async function confirmOffer(offerInfo, response){
             Ознакомиться подробнее можно в панели управления заявками
             `
         }]
-
-        console.log(4);
 
         // Обновление зависимостей для платного заказа
         if(offerInfo._offer.sub_id !== 'free' && !offerInfo._paidOffer && offerInfo._invitedBy) {      
@@ -972,8 +962,6 @@ async function confirmOffer(offerInfo, response){
             });
         }
 
-        console.log(5);
-
         // Если подписка бесплатная, убрать информацию о скидке и к оплате
         if(offerInfo._offer.sub_id === 'free'){
             delete offerInfo.discount;
@@ -988,8 +976,6 @@ async function confirmOffer(offerInfo, response){
                 withDefaultOptions: true
             });
         }
-
-        console.log(6);
         
         //отправка уведомления
         await BotService.NOTIFY(notifyUsers)
