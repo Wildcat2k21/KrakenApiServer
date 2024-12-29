@@ -917,6 +917,8 @@ async function confirmOffer(offerInfo, response){
             await OFFER.DELETE(oldOffer.offer_id);
         }
 
+        console.log(0);
+
         // Создаем нового пользователя
         const requestData = await XUI_API.CreateUser({email: username, totalGB: data_limit, expiryTime: expire * 1000});
 
