@@ -252,6 +252,7 @@ class XUI_API{
 
         //получение списка пользователей
         const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/inbound/list`, {
+            credentials: "include",
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
