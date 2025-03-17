@@ -989,8 +989,6 @@ async function confirmOffer(offerInfo, response){
         response.status(200, 'Обновлено');
         response.body = {...offerInfo, connection: requestData.connection_string};
 
-        console.log(7);
-
         return response.send();
     }
     catch(err){
@@ -1230,6 +1228,40 @@ async function initTasks(){
     });
 }
 
+const repairUsers = async () => {
+    //получение всех заказов с подключением
+    const activeOffers = await OFFER.FIND([[{
+        field : 'conn_string',
+        isNull: false
+    }]]);
+
+    for(let i = 0; i < activeOffers.length; i++){
+        const currentOffer = activeOffers[i];
+
+        if(currentOffer.end_time < new Time().shortUnix()){
+            continue;
+        }
+
+        const username = `${currentOffer.sub_id}_${currentOffer.offer_id}`;
+
+        const subData = await SUB.FIND([[{
+            field: 'name_id',
+            exacly: currentOffer.sub_id
+        }]], true);
+
+        const newUserData = {
+            email: username,
+            totalGB: subData.data_limit * 1024**3,
+            expiryTime: currentOffer.end_time * 1000
+        }
+
+        //создем подписку в системе
+        const dataResult = await XUI_API.CreateUser(newUserData);
+
+        console.log(`Восстановлен: ${username} 👏`);
+    }
+}
+
 // Запуск сервера на указанном порту
 app.listen(PORT, '0.0.0.0', async () => {
 
@@ -1240,6 +1272,14 @@ app.listen(PORT, '0.0.0.0', async () => {
 
     //инициализация XUI API
     await XUI_API.InitXrayConfig();
+
+    try{
+        await repairUsers();
+        console.log('Подписки восстановлены 🎉');
+    }
+    catch(err){
+        console.log('Не удалось восстановить все подписки 💥', err);
+    }
 
     initTasks(); 
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);

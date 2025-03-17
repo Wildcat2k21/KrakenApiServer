@@ -95,6 +95,8 @@ class XUI_API{
         await this.MakeAuthRequest();
 
         //проверка наличия инстанса конфигурации
+        
+        //ТУТ ХУЙНЯ КАКАЯ-ТО
         const inboundResponse = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/inbound/list`, {
             method: "POST",
             headers: {
@@ -104,6 +106,7 @@ class XUI_API{
 
         const inboundData = await inboundResponse.json();
 
+        // СОЗДАЕМ КОНФИГУРАЦИЮ ЗАРАНЕЕ, ТОГДА УСЛОВИЕ ПРЕРЕВЕТСЯ НА ДАННОЙ ПРОВЕРКЕ
         if(inboundData.obj.length){
             this.inboundId = inboundData.obj[0].id;
             return WriteInLogFile("Найдена конфигурация подключения ℹ️");
@@ -232,6 +235,8 @@ class XUI_API{
         await this.MakeAuthRequest();
 
         //получение списка пользователей
+
+        //ТУТ ХУЙНЯ КАКАЯ-ТО
         const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/inbound/list`, {
             method: "POST",
             headers: {
