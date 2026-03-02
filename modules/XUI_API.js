@@ -112,48 +112,54 @@ class XUI_API{
             return WriteInLogFile("Найдена конфигурация подключения ℹ️");
         }
 
-        const config_json = await import("../x-ray-config.json", {
-            assert: { type: "json" },
-        });
+        // ОСТАНАВЛИВАЕМ ВЫПОЛНЕНИЕ
+        throw new Error("КОНФИГУРАЦИЯ НЕ НАЙДЕНА ❗️");
 
-        //получение сертификата
-        const {privateKey, publicKey} = (await this.GetNewCert()).obj;
+        // --- КОД НИЖЕ НУЖНО ДОРАБОТАТЬ, ЧТОБЫ ИНИЦИАЛИЗИРОВАТЬ КОНФИГУРАЦИЮ АВТОМАТИЧЕСКИ
+        // --- В ТЕКУЩЕЙ РЕАЛИЗАЦИИ ОНА ДОЛЖНА БЫТЬ ЗАРАНЕЕ СОЗДАНА
 
-        //установка параметров сервера
-        const config = {...config_json.default}
-        config.streamSettings.realitySettings.privateKey = privateKey;
-        config.streamSettings.realitySettings.publicKey = publicKey;
-        config.port = Number(XUI_BASE_SUB_PORT);
+        // const config_json = await import("../x-ray-config.json", {
+        //     assert: { type: "json" },
+        // });
 
-        //установка коротких id
-        // config.streamSettings.realitySettings.shortIds = [
-        //     0, 0, 0, 0, 0, 0, 0, 0 
-        // ].map(_ => nanoid(Math.ceil(Math.random() * 13) + 3));
+        // //получение сертификата
+        // const {privateKey, publicKey} = (await this.GetNewCert()).obj;
 
-        //преобразование параметров в строку
-        const stringConfigParam = Object.keys(config).map(key => `${key}=${typeof config[key] === 'object' ? encodeURIComponent(JSON.stringify(config[key], null, 2)) : config[key]}`).join('&')
+        // //установка параметров сервера
+        // const config = {...config_json.default}
+        // config.streamSettings.realitySettings.privateKey = privateKey;
+        // config.streamSettings.realitySettings.publicKey = publicKey;
+        // config.port = Number(XUI_BASE_SUB_PORT);
 
-        //инициализация подписки
-        const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/inbound/add`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            },
-            body: stringConfigParam
-        });
+        // //установка коротких id
+        // // config.streamSettings.realitySettings.shortIds = [
+        // //     0, 0, 0, 0, 0, 0, 0, 0 
+        // // ].map(_ => nanoid(Math.ceil(Math.random() * 13) + 3));
 
-        const data = await response.json();
+        // //преобразование параметров в строку
+        // const stringConfigParam = Object.keys(config).map(key => `${key}=${typeof config[key] === 'object' ? encodeURIComponent(JSON.stringify(config[key], null, 2)) : config[key]}`).join('&')
 
-        if(!data.success) throw new Error("Не удалось инициализировать конфигурацию ❗️");
+        // //инициализация подписки
+        // const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/inbound/add`, {
+        //     method: "POST",
+        //     headers: {
+        //         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        //     },
+        //     body: stringConfigParam
+        // });
 
-        //установка идентификатора подключения
-        WriteInLogFile("Подключение создано 🎉");
-        this.inboundId = data.obj.id;
+        // const data = await response.json();
 
-        //добавление нулевой подписки
-        await this.CreateUser({email: "root", totalGB: 0, expiryTime: 0});
+        // if(!data.success) throw new Error("Не удалось инициализировать конфигурацию ❗️");
 
-        return data;
+        // //установка идентификатора подключения
+        // WriteInLogFile("Подключение создано 🎉");
+        // this.inboundId = data.obj.id;
+
+        // //добавление нулевой подписки
+        // await this.CreateUser({email: "root", totalGB: 0, expiryTime: 0});
+
+        // return data;
     }
 
     //создание пользователя
@@ -169,8 +175,7 @@ class XUI_API{
             id: this.inboundId,
             settings: {
                 clients: [{
-                    id: uuidv4(),
-                    flow: "xtls-rprx-vision",
+                    password: `${email}_${uuidv4()}`,
                     email,
                     limitIp: 0,
                     totalGB,
@@ -182,6 +187,25 @@ class XUI_API{
                 }]
             }
         }
+
+        // //объект пользователя
+        // const userObject = {
+        //     id: this.inboundId,
+        //     settings: {
+        //         clients: [{
+        //             id: uuidv4(),
+        //             flow: "xtls-rprx-vision",
+        //             email,
+        //             limitIp: 0,
+        //             totalGB,
+        //             expiryTime,
+        //             enable: true,
+        //             tgId: "",
+        //             subId: nanoid(16),
+        //             reset: 0
+        //         }]
+        //     }
+        // }
 
         //преобразование параметров в строку
         const stringUserParam = Object.keys(userObject).map(param => `${param}=${encodeURIComponent(JSON.stringify(userObject[param], null, 2))}`).join('&');
@@ -206,22 +230,27 @@ class XUI_API{
         return thisClient[0];
     }
 
-    //создание строки подключения пользователя
+    // создание строки подключения пользователя
     static CreateConnection = (client, streamSettings, protocol, port, remark) => {
 
-        //параметры строки подключения
         const connectionParams = {
-            security: streamSettings.security,
-            pbk: streamSettings.realitySettings.settings.publicKey,
-            fp: streamSettings.realitySettings.settings.fingerprint,
-            sni: streamSettings.realitySettings.serverNames[0],
-            sid: streamSettings.realitySettings.shortIds[0],
-            spx: streamSettings.realitySettings.settings.spiderX,
+            type: streamSettings.network, // tcp
+            security: streamSettings.security, // tls
+            fp: streamSettings.tlsSettings?.settings?.fingerprint,
+            alpn: streamSettings.tlsSettings?.alpn?.join(','),
+            sni: streamSettings.tlsSettings?.serverName,
             flow: client.flow
-        }
+        };
 
-        //создани строки подключения
-        const connection = `${protocol}://${client.id}@${XUI_IP_ADDR}:${port}?type=${streamSettings.network}&${Object.keys(connectionParams).map(key => `${key}=${encodeURIComponent(connectionParams[key])}`).join('&')}#${encodeURI(`${remark} - ${client.email}`)}`;
+        // удаляем undefined/null параметры
+        const query = Object
+            .entries(connectionParams)
+            .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+            .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+            .join('&');
+
+        const connection =
+            `${protocol}://${client.id}@${XUI_IP_ADDR}:${port}?${query}#${encodeURI(`${remark} - ${client.email}`)}`;
 
         return connection;
     }
