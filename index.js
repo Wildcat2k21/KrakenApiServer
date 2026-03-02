@@ -1262,6 +1262,51 @@ async function initTasks(){
 //     }
 // }
 
+const repairUsers = async () => {
+    // открываем базу
+    const db = await open({
+        filename: './database.db',
+        driver: sqlite3.Database
+    });
+
+    // получаем все активные подписки
+    const activeOffers = await db.all(`
+        SELECT * FROM offer
+        WHERE conn_string IS NOT NULL
+          AND end_time > strftime('%s','now')
+    `);
+
+    for (let offer of activeOffers) {
+        const username = `${offer.sub_id}_${offer.offer_id}`;
+
+        // получаем данные подписки
+        const subData = await db.get(
+            `SELECT * FROM sub WHERE name_id = ?`,
+            offer.sub_id
+        );
+
+        if (!subData) {
+            console.log(`Не найдена подписка sub_id=${offer.sub_id} для offer_id=${offer.offer_id}`);
+            continue;
+        }
+
+        const newUserData = {
+            email: username,
+            totalGB: subData.data_limit * 1024 ** 3,
+            expiryTime: offer.end_time * 1000
+        };
+
+        try {
+            await XUI_API.CreateUser(newUserData);
+            console.log(`Восстановлен: ${username} 👏`);
+        } catch (err) {
+            console.log(`Ошибка при восстановлении ${username} 💥`, err);
+        }
+    }
+
+    await db.close();
+};
+
 // Запуск сервера на указанном порту
 app.listen(PORT, '0.0.0.0', async () => {
 
@@ -1273,13 +1318,13 @@ app.listen(PORT, '0.0.0.0', async () => {
     //инициализация XUI API
     await XUI_API.InitXrayConfig();
 
-    // try{
-    //     await repairUsers();
-    //     console.log('Подписки восстановлены 🎉');
-    // }
-    // catch(err){
-    //     console.log('Не удалось восстановить все подписки 💥', err);
-    // }
+    try{
+        await repairUsers();
+        console.log('Подписки восстановлены 🎉');
+    }
+    catch(err){
+        console.log('Не удалось восстановить все подписки 💥', err);
+    }
 
     initTasks(); 
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
