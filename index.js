@@ -1228,84 +1228,39 @@ async function initTasks(){
     });
 }
 
-// const repairUsers = async () => {
-//     //получение всех заказов с подключением
-//     const activeOffers = await OFFER.FIND([[{
-//         field : 'conn_string',
-//         isNull: false
-//     }]]);
-
-//     for(let i = 0; i < activeOffers.length; i++){
-//         const currentOffer = activeOffers[i];
-
-//         if(currentOffer.end_time < new Time().shortUnix()){
-//             continue;
-//         }
-
-//         const username = `${currentOffer.sub_id}_${currentOffer.offer_id}`;
-
-//         const subData = await SUB.FIND([[{
-//             field: 'name_id',
-//             exacly: currentOffer.sub_id
-//         }]], true);
-
-//         const newUserData = {
-//             email: username,
-//             totalGB: subData.data_limit * 1024**3,
-//             expiryTime: currentOffer.end_time * 1000
-//         }
-
-//         //создем подписку в системе
-//         const dataResult = await XUI_API.CreateUser(newUserData);
-
-//         console.log(`Восстановлен: ${username} 👏`);
-//     }
-// }
-
 const repairUsers = async () => {
-    // открываем базу
-    const db = await open({
-        filename: './database.db',
-        driver: sqlite3.Database
-    });
+    //получение всех заказов с подключением
+    const activeOffers = await OFFER.FIND([[{
+        field : 'conn_string',
+        isNull: false
+    }]]);
 
-    // получаем все активные подписки
-    const activeOffers = await db.all(`
-        SELECT * FROM offer
-        WHERE conn_string IS NOT NULL
-          AND end_time > strftime('%s','now')
-    `);
+    for(let i = 0; i < activeOffers.length; i++){
+        const currentOffer = activeOffers[i];
 
-    for (let offer of activeOffers) {
-        const username = `${offer.sub_id}_${offer.offer_id}`;
-
-        // получаем данные подписки
-        const subData = await db.get(
-            `SELECT * FROM sub WHERE name_id = ?`,
-            offer.sub_id
-        );
-
-        if (!subData) {
-            console.log(`Не найдена подписка sub_id=${offer.sub_id} для offer_id=${offer.offer_id}`);
+        if(currentOffer.end_time < new Time().shortUnix()){
             continue;
         }
 
+        const username = `${currentOffer.sub_id}_${currentOffer.offer_id}`;
+
+        const subData = await SUB.FIND([[{
+            field: 'name_id',
+            exacly: currentOffer.sub_id
+        }]], true);
+
         const newUserData = {
             email: username,
-            totalGB: subData.data_limit * 1024 ** 3,
-            expiryTime: offer.end_time * 1000
-        };
-
-        try {
-            await XUI_API.CreateUser(newUserData);
-            console.log(`Восстановлен: ${username} 👏`);
-        } catch (err) {
-            console.log(`Ошибка при восстановлении ${username} 💥`, err);
+            totalGB: subData.data_limit * 1024**3,
+            expiryTime: currentOffer.end_time * 1000
         }
-    }
 
-    await db.close();
-};
+        //создем подписку в системе
+        const dataResult = await XUI_API.CreateUser(newUserData);
+
+        console.log(`Восстановлен: ${username} 👏`);
+    }
+}
 
 // Запуск сервера на указанном порту
 app.listen(PORT, '0.0.0.0', async () => {
