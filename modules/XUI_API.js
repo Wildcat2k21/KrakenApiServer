@@ -249,7 +249,7 @@ class XUI_API{
             .join('&');
 
         const connection =
-            `${protocol}://${client.sVadqVPrqE}@${XUI_HOSTNAME}:${port}?${query}#${encodeURI(`${remark} - ${client.email}`)}`;
+            `${protocol}://${client.email}@${XUI_HOSTNAME}:${port}?${query}#${encodeURI(`${remark} - ${client.email}`)}`;
 
         return connection;
     }
