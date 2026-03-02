@@ -16,7 +16,7 @@ const {WriteInLogFile} = Other;
 //ИМПОРТ КОНФИГУРАЦИИ ВЫЗЫВАЕТ ПРОБЛЕМУ
 
 //получение переменных
-const {XUI_DASHBOARD_URL, XUI_ADMIN_LOGIN, XUI_ADMIN_PASSWD, XUI_BASE_SUB_PORT} =  process.env;
+const {XUI_DASHBOARD_URL, XUI_ADMIN_LOGIN, XUI_ADMIN_PASSWD} =  process.env;
 const XUI_HOSTNAME = process.env.XUI_HOSTNAME;
 
 //получение кук
