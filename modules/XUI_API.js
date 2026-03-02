@@ -17,7 +17,7 @@ const {WriteInLogFile} = Other;
 
 //получение переменных
 const {XUI_DASHBOARD_URL, XUI_ADMIN_LOGIN, XUI_ADMIN_PASSWD, XUI_BASE_SUB_PORT} =  process.env;
-const XUI_IP_ADDR = process.env.XUI_IP_ADDR;
+const XUI_HOSTNAME = process.env.XUI_HOSTNAME;
 
 //получение кук
 const jar = new CookieJar();
@@ -250,7 +250,7 @@ class XUI_API{
             .join('&');
 
         const connection =
-            `${protocol}://${client.id}@${XUI_IP_ADDR}:${port}?${query}#${encodeURI(`${remark} - ${client.email}`)}`;
+            `${protocol}://${client.id}@${XUI_HOSTNAME}:${port}?${query}#${encodeURI(`${remark} - ${client.email}`)}`;
 
         return connection;
     }
