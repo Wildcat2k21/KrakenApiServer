@@ -238,8 +238,7 @@ class XUI_API{
             security: streamSettings.security, // tls
             fp: streamSettings.tlsSettings?.settings?.fingerprint,
             alpn: streamSettings.tlsSettings?.alpn?.join(','),
-            sni: streamSettings.tlsSettings?.serverName,
-            flow: client.flow
+            sni: streamSettings.tlsSettings?.serverName
         };
 
         // удаляем undefined/null параметры
@@ -250,7 +249,7 @@ class XUI_API{
             .join('&');
 
         const connection =
-            `${protocol}://${client.id}@${XUI_HOSTNAME}:${port}?${query}#${encodeURI(`${remark} - ${client.email}`)}`;
+            `${protocol}://${client.sVadqVPrqE}@${XUI_HOSTNAME}:${port}?${query}#${encodeURI(`${remark} - ${client.email}`)}`;
 
         return connection;
     }
