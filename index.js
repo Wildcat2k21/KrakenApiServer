@@ -4,12 +4,12 @@ import Response from './modules/Response.js';
 import Database from './modules/Database.js';
 import express from 'express';
 
-const {USER, OFFER, SUB, PROMO} = Entities;
+const { USER, OFFER, SUB, PROMO } = Entities;
 
 import dotenv from 'dotenv';
 dotenv.config();
 
-import {promises as fs} from 'fs';
+import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -26,8 +26,8 @@ import BotService from './modules/BotService.js';
 import Data from './modules/Data.js';
 import TimeShedular from './modules/TimeShedular.js';
 
-const {WriteInLogFile, FormatBytes} = Other;
-const {checkUserFields, checkOfferFields, checkConfigFields} = Data;
+const { WriteInLogFile, FormatBytes, EncodeBase62BigInt } = Other;
+const { checkUserFields, checkOfferFields, checkConfigFields } = Data;
 
 // Конфигурация
 let config = null;
@@ -309,7 +309,7 @@ app.get('/offer', async (req, res) => {
         }]], true);
         
         // Информация о подписке
-        const wairingoffer = {
+        const waitingOffer = {
             offerId: lastOffer.offer_id,
             subName: offerSub.title,
             subDataGBLimit: offerSub.data_limit,
@@ -318,7 +318,7 @@ app.get('/offer', async (req, res) => {
 
         // Обработка зкаказа как "Ожидающий"
         if(!lastOffer.conn_string){
-            response.body = wairingoffer;
+            response.body = waitingOffer;
             return response.send();
         }
 
@@ -331,6 +331,9 @@ app.get('/offer', async (req, res) => {
         // Название пользователя
         const username = `${lastOffer.sub_id}_${lastOffer.offer_id}`;
 
+        // Резервная подписка
+        const def_sub_name = `${EncodeBase62BigInt(telegram_id)}-ДЛЯ-ТГ`;
+
         // Информация о заказе в системе Marzban
         const dataResult = await XUI_API.GetUser(username)
         const marzbanInfo = dataResult[0];
@@ -340,6 +343,13 @@ app.get('/offer', async (req, res) => {
             return response.status(404, 'Заявка в системе не найдена').send();
         }
 
+        // Информация о резервной подписки для тг
+        const defSubRes = await XUI_API.GetUser(def_sub_name);
+
+        // Заказа может и не быть, так как это фича
+        // В общем случае проверка не требовалась бы
+        // Потом ее можно убрать, для ясности: defSubRes.length
+        
         // Расчет оставшегося трафика
         const data_limit = !marzbanInfo.data_limit ? null : marzbanInfo.data_limit - marzbanInfo.used_traffic;
 
@@ -368,6 +378,7 @@ app.get('/offer', async (req, res) => {
             nextPayDiscount: convPayDiscVal,
             price: offerSub.price,
             connString: marzbanInfo.connection_string,
+            defConnString: defSubRes?.[0]?.connection_string,
             limitDiffrence,
             isExpired
         };
@@ -884,7 +895,7 @@ async function calcPriceAndDiscount(offer_user, subPrice, promoDiscount){
 async function confirmOffer(offerInfo, response){
 
     try{
-        // Уникальный имена для тарифа
+        // Уникальные имена для подписки
         const username = `${offerInfo._sub.name_id}_${offerInfo._offer.offer_id}`;
 
         // Установка даты окончания подписки
@@ -936,6 +947,34 @@ async function confirmOffer(offerInfo, response){
 
         // Обновление пользователя
         if(userUpdateOptions) await USER.UPDATE(offerInfo._user.telegram_id, userUpdateOptions);
+
+        let isUserHasEmptyDefCon = await USER.FIND([[{
+            field: 'telegram_id',
+            exacly: offerInfo._user.telegram_id
+        },{
+            field: 'default_con_string',
+            isNull: true
+        }]], true);
+
+        // Создаем резервную вечную подписку
+        if(isUserHasEmptyDefCon){
+
+            const defSubGbLimit = 0.33;
+
+            const shortTID = EncodeBase62BigInt(offerInfo._user.telegram_id);
+
+            // Создаем нового пользователя
+            const def_xui_sub = await XUI_API.CreateUser({
+                email:  `${shortTID}-ДЛЯ-ТГ`,
+                totalGB: defSubGbLimit * 1024**3,
+                expiryTime: expire * 1000,
+                reset: 25 //Сброс каждые 15 дней
+            });
+
+            await USER.UPDATE(offerInfo._user.telegram_id, {
+                default_con_string: def_xui_sub.connection_string
+            });
+        }
 
         //уведомление для администратора
         const notifyUsers = [{
@@ -1047,7 +1086,7 @@ function databaseErrorHandler(err, response){
 
 async function initTasks(){
 
-    //Поддержка проекта (каждые 14 дней)
+    //Поддержка проекта (каждые 14 дней) 3600 * 1000 * 24 * дней
     TimeShedular.NewTask('notification', 1209600000, async () => {
 
         //получение всех пользователей для рассылки
@@ -1091,25 +1130,26 @@ async function initTasks(){
             const timeNow = new Time().shortUnix(); //2500000
 
             //если подписка полностью иссякла, прислать уведомление
-            if(timeNow >= offer.end_time){
-                usersToNotify.push({
-                    id: offer.user_id,
-                    message: `Срок по вашей подписки подошел к концу. Офрмите новую, чтобы продолжить 🔂`
-                });
+            // if(timeNow >= offer.end_time){
+            //     usersToNotify.push({
+            //         id: offer.user_id,
+            //         message: `Срок по вашей подписки подошел к концу. Офрмите новую, чтобы продолжить 🔂`
+            //     });
 
-                continue
-            }
+            //     continue
+            // }
 
             //если подписка заканчивается, прислать уведомление
             if(timeNow + untilTime >= offer.end_time){
                 usersToNotify.push({
                     id: offer.user_id,
                     message: `Срок действия вашей подписки подходит к концу/n/n📅 ${new Time(offer.end_time).toFriendlyString()}/n/n
-                    <b>Не забудьте оформить новую, перед ее окончанием 🔂</b>
+                    <b>Не забудьте оформить новую, перед ее окончанием 🔂/n/n
+                    Резервная подписка в "Моя подписка" поможет вам с доступом телеграм в случае возникновения проблем, не теряйте ее.</b>
                     `
                 })
 
-                continue
+                continue;
             }
 
             // Имя пользователя в Marzban
@@ -1125,14 +1165,16 @@ async function initTasks(){
             const traffic_balance = !marzbanUser.data_limit ? null : marzbanUser.data_limit - marzbanUser.used_traffic;
 
             // Если трафик по подписке истек
-            if(traffic_balance && traffic_balance <= 1024){
-                usersToNotify.push({
-                    id: offer.user_id,
-                    message: 'Трафик по вашей подписке подошел к концу. Офрмите новую, чтобы продолжить 🔂'
-                })
+            // if(traffic_balance && traffic_balance <= 1024){
+            //     usersToNotify.push({
+            //         id: offer.user_id,
+            //         message: `Трафик по вашей подписке подошел к концу. Офрмите новую, чтобы продолжить 🔂/n/n
+            //         Резервная подписка в "Моя подписка" поможет вам с доступом телеграм в случае возникновения проблем, не теряйте ее.</b>
+            //         `
+            //     })
 
-                continue
-            }
+            //     continue
+            // }
 
             //если трафик по подписке подходит к концу
             if(marzbanUser.data_limit && traffic_balance <= untilData){
@@ -1140,11 +1182,12 @@ async function initTasks(){
                     id: offer.user_id,
                     message: `Трафик по вашей подписке подходит к концу/n/n
                     📶 Осталось: ${FormatBytes(traffic_balance)}/n/n
-                    <b>Не забудьте оформить новую, перед окончанием 🔂</b>
+                    <b>Не забудьте оформить новую, перед окончанием 🔂</b>/n/n
+                    Резервная подписка в "Моя подписка" поможет вам с доступом телеграм в случае возникновения проблем, не теряйте ее.</b>
                     `
                 });
 
-                continue
+                continue;
             }
         }
 
@@ -1203,22 +1246,37 @@ async function initTasks(){
     });
 
     //уведомление о релакации в нидерланды (каждые 2 недели)
-    TimeShedular.NewTask('releases', 1209600000, async () => {
+    TimeShedular.NewTask('releases', 864000000, async () => {
         const usersToNotify = await USER.FIND();
         const notifyMessages = usersToNotify.map(user => {
             return {
                 id: user.telegram_id,
                 withDefaultOptions: true,
-                message: `<b>Мы переехали в Нидерланды 🎉🎉🎉</b>/n/n
-                <b>Что это значит ❓</b>/n/n
-                ✔️ Торренты на максимальной скорости/n
-                🍿 Больше пиратских сайтов и кинотеатров/n
-                🏴‍☠️ Доступен Rutracker, Torrents, KickAssTorrent/n
-                💬 Замедление Ютюб ? Не не слышали/n
-                💻 Нейросети ChatGPT, BingAI, DELLEE/n
-                🍓 Сайты с клубничным контентом теперь доступны/n/n
-                Если вы еще не подключились, выберите опцию "Как подключиться" ниже/n/n<b>
-                💯 Вступайте к нам в группе <a href='https://t.me/kraken_team_project'>Kraken Team Project 🔱</a>, и участвуйте в розыгрыше подписок 🎁/n/n</b>
+                message: `
+                    <b>Важная информация ⚡️⚡️⚡️</b>/n/n
+                    <b>1. Доступ к некоторым сервисам</b>/n/n
+                    🚫 Через VPN недоступны сайты и сервисы из белых списков РФ, для обеспечения вашей безопасности мы их заблокировали/n
+                    ✔️ Чтобы ими воспользоваться — <b>просто отключите VPN</b>/n/n
+
+                    <b>2. Крайне рекомендуем ⚡️</b>/n/n
+                    📱 Отдельный телефон <b>без VPN</b> — для RU-сервисов: Сбер, Тинькофф, MAX, VK, Rutube и др./n/n
+
+                    📱 Отдельный телефон <b>с VPN</b> — для всего остального:/n
+                    TikTok, YouTube и др./n/n
+
+                    ❗ <b>Важно:</b> никаких исключений — не смешивайте использование/n/n
+
+                    <b>3. Резервные подписки 🆘</b>/n/n
+                    ➕ Мы добавили резервные подписки для экстренного доступа к Telegram/n
+                    🔄 Они обновляются каждый месяц и действуют бессрочно/n
+                    ⚡️ Дают короткий доступ, чтобы оформить новую заявку и получить основную подписку/n/n
+
+                    ❗ <b>Их нельзя терять</b>/n
+                    ℹ️ Подробнее в разделе "Моя подписка"/n/n
+
+                    <b>Наша рекомендация 💡</b>/n/n
+                    ✔️ Следуйте этим правилам, чтобы сохранить стабильный доступ/n
+                    ✔️ Это поможет оставаться на связи и спокойно пользоваться интернетом
                 `
             }
         });

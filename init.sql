@@ -25,7 +25,8 @@ CREATE TABLE user (
     invite_code TEXT NOT NULL CHECK(LENGTH(invite_code) = 4) UNIQUE,
     invite_count INTEGER DEFAULT 0,
     invited_with_code TEXT DEFAULT NULL,
-    blocked INTEGER DEFAULT 0
+    blocked INTEGER DEFAULT 0,
+    default_con_string TEXT DEFAULT NULL
 );
 
 -- Заказы

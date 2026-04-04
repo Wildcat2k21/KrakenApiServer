@@ -163,7 +163,7 @@ class XUI_API{
     }
 
     //создание пользователя
-    static CreateUser = async ({email, totalGB, expiryTime}) => {
+    static CreateUser = async ({ email, totalGB, expiryTime, reset = 0 }) => {
 
         if(!this.inboundId) throw new Error("Подключение не инициализировано ❗️");
 
@@ -183,7 +183,7 @@ class XUI_API{
                     enable: true,
                     tgId: "",
                     subId: nanoid(16),
-                    reset: 0
+                    reset,
                 }]
             }
         }

@@ -20,7 +20,20 @@ function FormatBytes(bytes) {
     const formattedSize = (bytes / Math.pow(1024, i)).toFixed(2); // Округляем до 2 знаков после запятой
   
     return `${formattedSize} ${sizes[i]}`;
+}
+
+// Короткие id из чисел
+function EncodeBase62BigInt(num) {
+  const alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  num = BigInt(num);
+
+  let result = "";
+  while (num > 0n) {
+    result = alphabet[Number(num % 62n)] + result;
+    num = num / 62n;
   }
+  return result;
+}
 
 // Ведение логов
 function WriteInLogFile(messageOrError){
@@ -52,4 +65,4 @@ function WriteInLogFile(messageOrError){
     }
 }
 
-export default {Time, RandCode, WriteInLogFile, FormatBytes};
+export default {Time, RandCode, WriteInLogFile, FormatBytes, EncodeBase62BigInt};
