@@ -1320,57 +1320,55 @@ async function initTasks(){
 //     }
 // }
 
+// const repairUsers = async () => {
+//     //получение всех заказов с подключением
+//     const usersWithNotDefCon = await USER.FIND([[{
+//         field : 'default_con_string',
+//         isNull: true
+//     }]]);
 
+//     const offersWithConnections = await OFFER.FIND([[{
+//         field : 'conn_string',
+//         isNull: false
+//     }]]);
 
-const repairUsers = async () => {
-    //получение всех заказов с подключением
-    const usersWithNotDefCon = await USER.FIND([[{
-        field : 'default_con_string',
-        isNull: true
-    }]]);
+//     const activeOffer = offersWithConnections.filter(offer => offer.end_time > new Time().shortUnix());
 
-    const offersWithConnections = await OFFER.FIND([[{
-        field : 'conn_string',
-        isNull: false
-    }]]);
+//     for(let i = 0; i < usersWithNotDefCon.length; i++){
 
-    const activeOffer = offersWithConnections.filter(offer => offer.end_time > new Time().shortUnix());
+//         const current = usersWithNotDefCon[i];
 
-    for(let i = 0; i < usersWithNotDefCon.length; i++){
+//         const userActiveOffer = activeOffer.find(offer => offer.user_id == current.telegram_id);
 
-        const current = usersWithNotDefCon[i];
+//         if(!userActiveOffer) {
+//             console.log(`Пропуск истекшего пользователя: ${current.nickname} ❌`);
+//             continue;
+//         }
 
-        const userActiveOffer = activeOffer.find(offer => offer.user_id == current.telegram_id);
+//         // if(currentOffer.end_time < new Time().shortUnix()){
+//         //     continue;
+//         // }
 
-        if(!userActiveOffer) {
-            console.log(`Пропуск истекшего пользователя: ${current.nickname} ❌`);
-            continue;
-        }
+//         // Создаем резервную вечную подписку
+//         const defSubGbLimit = 0.33;
 
-        // if(currentOffer.end_time < new Time().shortUnix()){
-        //     continue;
-        // }
+//         const shortTID = EncodeBase62BigInt(current.telegram_id);
 
-        // Создаем резервную вечную подписку
-        const defSubGbLimit = 0.33;
+//         // Создаем нового пользователя
+//         const def_xui_sub = await XUI_API.CreateUser({
+//             email:  `${shortTID}-ДЛЯ-ТГ`,
+//             totalGB: defSubGbLimit * 1024**3,
+//             expiryTime: userActiveOffer.end_time * 1000,
+//             reset: 25 //Сброс каждые 15 дней
+//         });
 
-        const shortTID = EncodeBase62BigInt(current.telegram_id);
+//         await USER.UPDATE(current.telegram_id, {
+//             default_con_string: def_xui_sub.connection_string
+//         });
 
-        // Создаем нового пользователя
-        const def_xui_sub = await XUI_API.CreateUser({
-            email:  `${shortTID}-ДЛЯ-ТГ`,
-            totalGB: defSubGbLimit * 1024**3,
-            expiryTime: userActiveOffer.end_time * 1000,
-            reset: 25 //Сброс каждые 15 дней
-        });
-
-        await USER.UPDATE(current.telegram_id, {
-            default_con_string: def_xui_sub.connection_string
-        });
-
-        console.log(`Добавлена строка по умолчанию пользователю: ${current.nickname} 👏`);
-    }
-}
+//         console.log(`Добавлена строка по умолчанию пользователю: ${current.nickname} 👏`);
+//     }
+// }
 
 // Запуск сервера на указанном порту
 app.listen(PORT, '0.0.0.0', async () => {
@@ -1383,13 +1381,13 @@ app.listen(PORT, '0.0.0.0', async () => {
     //инициализация XUI API
     await XUI_API.InitXrayConfig();
 
-    try{
-        await repairUsers();
-        console.log('Подписки восстановлены 🎉');
-    }
-    catch(err){
-        console.log('Не удалось восстановить все подписки 💥', err);
-    }
+    // try{
+    //     await repairUsers();
+    //     console.log('Подписки восстановлены 🎉');
+    // }
+    // catch(err){
+    //     console.log('Не удалось восстановить все подписки 💥', err);
+    // }
 
     initTasks(); 
     WriteInLogFile(`Сервер прослушивается на http://localhost:${PORT} 👂`);
