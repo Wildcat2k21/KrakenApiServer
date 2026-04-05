@@ -1340,7 +1340,9 @@ const repairUsers = async () => {
 
         const current = usersWithNotDefCon[i];
 
-        if(!activeOffer.some(offer => offer.user_id == current.telegram_id)) {
+        const userActiveOffer = activeOffer.find(offer.user_id == current.telegram_id);
+
+        if(!userActiveOffer) {
             console.log(`Пропуск истекшего пользователя: ${current.nickname} ❌`);
             continue;
         }
@@ -1358,7 +1360,7 @@ const repairUsers = async () => {
         const def_xui_sub = await XUI_API.CreateUser({
             email:  `${shortTID}-ДЛЯ-ТГ`,
             totalGB: defSubGbLimit * 1024**3,
-            expiryTime: expire * 1000,
+            expiryTime: userActiveOffer.end_time * 1000,
             reset: 25 //Сброс каждые 15 дней
         });
 
