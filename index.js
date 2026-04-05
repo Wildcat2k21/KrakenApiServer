@@ -1340,7 +1340,7 @@ const repairUsers = async () => {
 
         const current = usersWithNotDefCon[i];
 
-        const userActiveOffer = activeOffer.find(offer.user_id == current.telegram_id);
+        const userActiveOffer = activeOffer.find(offer => offer.user_id == current.telegram_id);
 
         if(!userActiveOffer) {
             console.log(`Пропуск истекшего пользователя: ${current.nickname} ❌`);
