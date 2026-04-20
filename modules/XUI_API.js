@@ -63,30 +63,30 @@ class XUI_API{
         return data;
     }
 
-    //получение токена сертификата
-    static GetNewCert = async () => {
+    // //получение токена сертификата
+    // static GetNewCert = async () => {
 
-        //получение куков авторизации для проверки
-        const authCookie = await this.findAuthCookie();
+    //     //получение куков авторизации для проверки
+    //     const authCookie = await this.findAuthCookie();
 
-        //выходим если куки авторизации имеются
-        if(!authCookie) throw new Error("Не удалось получить сертификат. Куки авторизации не найдены");
+    //     //выходим если куки авторизации имеются
+    //     if(!authCookie) throw new Error("Не удалось получить сертификат. Куки авторизации не найдены");
 
-        const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/server/getNewX25519Cert`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            }
-        });
+    //     const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/server/getNewX25519Cert`, {
+    //         method: "GET",
+    //         headers: {
+    //             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    //         }
+    //     });
 
-        const data = await response.json();
+    //     const data = await response.json();
 
-        // Проверяем, что запрос прошел успешно
-        if(!data.success) throw new Error("Не удалось получить сертификат");
+    //     // Проверяем, что запрос прошел успешно
+    //     if(!data.success) throw new Error("Не удалось получить сертификат");
 
-        // Получим данные сертификата
-        return data;
-    }
+    //     // Получим данные сертификата
+    //     return data;
+    // }
 
     //инициализация сервера
     static InitXrayConfig = async () => {
@@ -292,7 +292,7 @@ class XUI_API{
 
         //ТУТ ХУЙНЯ КАКАЯ-ТО
         const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/api/inbounds/list`, {
-            method: "POST",
+            method: "GET",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
