@@ -63,31 +63,6 @@ class XUI_API{
         return data;
     }
 
-    // //получение токена сертификата
-    // static GetNewCert = async () => {
-
-    //     //получение куков авторизации для проверки
-    //     const authCookie = await this.findAuthCookie();
-
-    //     //выходим если куки авторизации имеются
-    //     if(!authCookie) throw new Error("Не удалось получить сертификат. Куки авторизации не найдены");
-
-    //     const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/server/getNewX25519Cert`, {
-    //         method: "GET",
-    //         headers: {
-    //             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-    //         }
-    //     });
-
-    //     const data = await response.json();
-
-    //     // Проверяем, что запрос прошел успешно
-    //     if(!data.success) throw new Error("Не удалось получить сертификат");
-
-    //     // Получим данные сертификата
-    //     return data;
-    // }
-
     //инициализация сервера
     static InitXrayConfig = async () => {
 
@@ -114,74 +89,22 @@ class XUI_API{
 
         // ОСТАНАВЛИВАЕМ ВЫПОЛНЕНИЕ
         throw new Error("КОНФИГУРАЦИЯ НЕ НАЙДЕНА ❗️");
-
-        // --- КОД НИЖЕ НУЖНО ДОРАБОТАТЬ, ЧТОБЫ ИНИЦИАЛИЗИРОВАТЬ КОНФИГУРАЦИЮ АВТОМАТИЧЕСКИ
-        // --- В ТЕКУЩЕЙ РЕАЛИЗАЦИИ ОНА ДОЛЖНА БЫТЬ ЗАРАНЕЕ СОЗДАНА
-
-        // const config_json = await import("../x-ray-config.json", {
-        //     assert: { type: "json" },
-        // });
-
-        // //получение сертификата
-        // const {privateKey, publicKey} = (await this.GetNewCert()).obj;
-
-        // //установка параметров сервера
-        // const config = {...config_json.default}
-        // config.streamSettings.realitySettings.privateKey = privateKey;
-        // config.streamSettings.realitySettings.publicKey = publicKey;
-        // config.port = Number(XUI_BASE_SUB_PORT);
-
-        // //установка коротких id
-        // // config.streamSettings.realitySettings.shortIds = [
-        // //     0, 0, 0, 0, 0, 0, 0, 0 
-        // // ].map(_ => nanoid(Math.ceil(Math.random() * 13) + 3));
-
-        // //преобразование параметров в строку
-        // const stringConfigParam = Object.keys(config).map(key => `${key}=${typeof config[key] === 'object' ? encodeURIComponent(JSON.stringify(config[key], null, 2)) : config[key]}`).join('&')
-
-        // //инициализация подписки
-        // const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/api/inbounds/add`, {
-        //     method: "POST",
-        //     headers: {
-        //         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        //     },
-        //     body: stringConfigParam
-        // });
-
-        // const data = await response.json();
-
-        // if(!data.success) throw new Error("Не удалось инициализировать конфигурацию ❗️");
-
-        // //установка идентификатора подключения
-        // WriteInLogFile("Подключение создано 🎉");
-        // this.inboundId = data.obj.id;
-
-        // //добавление нулевой подписки
-        // await this.CreateUser({email: "root", totalGB: 0, expiryTime: 0});
-
-        // return data;
     }
 
     //создание пользователя
     static CreateUser = async ({ email, totalGB, expiryTime, reset = 0 }) => {
 
-        console.log("check log 5");
-
         if(!this.inboundId) throw new Error("Подключение не инициализировано ❗️");
-
-        console.log("check log 6");
 
         //авторизация
         await this.MakeAuthRequest();
-
-        console.log("check log 7");
 
         //объект пользователя
         const userObject = {
             id: this.inboundId,
             settings: {
                 clients: [{
-                    id: nanoid(36),
+                    id: uuidv4(),
                     flow: "xtls-rprx-vision",
                     email,
                     limitIp: 0,
@@ -195,31 +118,8 @@ class XUI_API{
             }
         }
 
-        // //объект пользователя
-        // const userObject = {
-        //     id: this.inboundId,
-        //     settings: {
-        //         clients: [{
-        //             id: uuidv4(),
-        //             flow: "xtls-rprx-vision",
-        //             email,
-        //             limitIp: 0,
-        //             totalGB,
-        //             expiryTime,
-        //             enable: true,
-        //             tgId: "",
-        //             subId: nanoid(16),
-        //             reset: 0
-        //         }]
-        //     }
-        // }
-
-        console.log("check log 8");
-
         //преобразование параметров в строку
         const stringUserParam = Object.keys(userObject).map(param => `${param}=${encodeURIComponent(JSON.stringify(userObject[param], null, 2))}`).join('&');
-
-        console.log("check log 9");
 
         //создание пользователя
         const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/api/inbounds/addClient`, {
@@ -230,11 +130,7 @@ class XUI_API{
             body: stringUserParam
         });
 
-        console.log("check log 10");
-
         const data = await response.json();
-
-        console.log("check log 11");
 
         if(!data.success) throw new Error(`Ошибка при создании пользователя "${email}" ❗️`);
 
@@ -242,8 +138,6 @@ class XUI_API{
         WriteInLogFile(`Пользователь "${email}" создан 🎉`);
 
         const thisClient = await this.GetUser(email);
-
-        console.log("check log 12");
 
         return thisClient[0];
     }
@@ -267,7 +161,7 @@ class XUI_API{
             .join('&');
 
         const connection =
-            `${protocol}://${client.password}@${XUI_HOSTNAME}:${port}?${query}#${encodeURI(`${remark} - ${client.email}`)}`;
+            `${protocol}://${client.id}@${XUI_HOSTNAME}:${port}?${query}#${encodeURI(`${remark}-${client.email}`)}`;
 
         return connection;
     }
@@ -275,20 +169,12 @@ class XUI_API{
     //получение пользователя
     static GetUser = async (email) => {
 
-        console.log("check log 13");
-
         if(!this.inboundId) throw new Error("Подключение не инициализировано ❗️");
-
-        console.log("check log 14");
         
         //авторизация
         await this.MakeAuthRequest();
 
-        console.log("check log 15");
-
         //получение списка пользователей
-
-        console.log("check log 16");
 
         //ТУТ ХУЙНЯ КАКАЯ-ТО
         const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/api/inbounds/list`, {
@@ -298,11 +184,7 @@ class XUI_API{
             }
         });
 
-        console.log("check log 17");
-
         const data = await response.json();
-
-        console.log("check log 18");
 
         //проверка условия возврата пользователей
         if(data.success){
