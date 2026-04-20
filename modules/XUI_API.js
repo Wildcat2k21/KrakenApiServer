@@ -98,7 +98,7 @@ class XUI_API{
         
         //ТУТ ХУЙНЯ КАКАЯ-ТО
         const inboundResponse = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/api/inbounds/list`, {
-            method: "POST",
+            method: "GET",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
