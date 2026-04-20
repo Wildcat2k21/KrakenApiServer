@@ -161,7 +161,7 @@ class XUI_API{
             .join('&');
 
         const connection =
-            `${protocol}://${client.id}@${XUI_HOSTNAME}:${port}?${query}#${encodeURI(`${remark}-${client.email}`)}`;
+            `${protocol}://${client.id}@${XUI_HOSTNAME}:${port}?${query}&encryption=none&flow=xtls-rprx-vision#${encodeURI(`${remark}-${client.email}`)}`;
 
         return connection;
     }
