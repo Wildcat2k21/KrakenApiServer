@@ -165,10 +165,16 @@ class XUI_API{
     //создание пользователя
     static CreateUser = async ({ email, totalGB, expiryTime, reset = 0 }) => {
 
+        console.log("check log 5");
+
         if(!this.inboundId) throw new Error("Подключение не инициализировано ❗️");
+
+        console.log("check log 6");
 
         //авторизация
         await this.MakeAuthRequest();
+
+        console.log("check log 7");
 
         //объект пользователя
         const userObject = {
@@ -208,8 +214,12 @@ class XUI_API{
         //     }
         // }
 
+        console.log("check log 8");
+
         //преобразование параметров в строку
         const stringUserParam = Object.keys(userObject).map(param => `${param}=${encodeURIComponent(JSON.stringify(userObject[param], null, 2))}`).join('&');
+
+        console.log("check log 9");
 
         //создание пользователя
         const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/api/inbounds/addClient`, {
@@ -220,13 +230,19 @@ class XUI_API{
             body: stringUserParam
         });
 
+        console.log("check log 10");
+
         const data = await response.json();
+
+        console.log("check log 11");
 
         if(!data.success) throw new Error(`Ошибка при создании пользователя "${email}" ❗️`);
 
         //возвращаем созданного пользователя
         WriteInLogFile(`Пользователь "${email}" создан 🎉`);
         const thisClient = await this.GetUser(email);
+
+        console.log("check log 12");
 
         return thisClient[0];
     }

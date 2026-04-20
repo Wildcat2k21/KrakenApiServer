@@ -956,12 +956,18 @@ async function confirmOffer(offerInfo, response){
             isNull: true
         }]], true);
 
+        console.log("check log 1");
+
         // Создаем резервную вечную подписку
         if(isUserHasEmptyDefCon){
 
             const defSubGbLimit = 0.33;
 
+            console.log("check log 2");
+
             const shortTID = EncodeBase62BigInt(offerInfo._user.telegram_id);
+
+            console.log("check log 3");
 
             // Создаем нового пользователя
             const def_xui_sub = await XUI_API.CreateUser({
@@ -970,6 +976,8 @@ async function confirmOffer(offerInfo, response){
                 expiryTime: expire * 1000,
                 reset: 25 //Сброс каждые 15 дней
             });
+
+            console.log("check log 4");
 
             await USER.UPDATE(offerInfo._user.telegram_id, {
                 default_con_string: def_xui_sub.connection_string
