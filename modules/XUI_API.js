@@ -97,7 +97,7 @@ class XUI_API{
         //проверка наличия инстанса конфигурации
         
         //ТУТ ХУЙНЯ КАКАЯ-ТО
-        const inboundResponse = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/inbound/list`, {
+        const inboundResponse = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/api/inbounds/list`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
@@ -140,7 +140,7 @@ class XUI_API{
         // const stringConfigParam = Object.keys(config).map(key => `${key}=${typeof config[key] === 'object' ? encodeURIComponent(JSON.stringify(config[key], null, 2)) : config[key]}`).join('&')
 
         // //инициализация подписки
-        // const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/inbound/add`, {
+        // const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/api/inbounds/add`, {
         //     method: "POST",
         //     headers: {
         //         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -175,7 +175,8 @@ class XUI_API{
             id: this.inboundId,
             settings: {
                 clients: [{
-                    password: `${email}_${uuidv4()}`,
+                    id: nanoid(36),
+                    flow: "xtls-rprx-vision",
                     email,
                     limitIp: 0,
                     totalGB,
@@ -211,7 +212,7 @@ class XUI_API{
         const stringUserParam = Object.keys(userObject).map(param => `${param}=${encodeURIComponent(JSON.stringify(userObject[param], null, 2))}`).join('&');
 
         //создание пользователя
-        const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/inbound/addClient`, {
+        const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/api/inbounds/addClient`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -265,7 +266,7 @@ class XUI_API{
         //получение списка пользователей
 
         //ТУТ ХУЙНЯ КАКАЯ-ТО
-        const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/inbound/list`, {
+        const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/api/inbounds/list`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
@@ -332,7 +333,7 @@ class XUI_API{
         const user_id = currentUser[0].uid;
 
         //удаление пользователя
-        const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/inbound/${this.inboundId}/delClient/${user_id}`, {
+        const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/api/inbounds/${this.inboundId}/delClient/${user_id}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
