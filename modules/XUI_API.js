@@ -240,6 +240,7 @@ class XUI_API{
 
         //возвращаем созданного пользователя
         WriteInLogFile(`Пользователь "${email}" создан 🎉`);
+
         const thisClient = await this.GetUser(email);
 
         console.log("check log 12");
@@ -274,12 +275,20 @@ class XUI_API{
     //получение пользователя
     static GetUser = async (email) => {
 
+        console.log("check log 13");
+
         if(!this.inboundId) throw new Error("Подключение не инициализировано ❗️");
 
+        console.log("check log 14");
+        
         //авторизация
         await this.MakeAuthRequest();
 
+        console.log("check log 15");
+
         //получение списка пользователей
+
+        console.log("check log 16");
 
         //ТУТ ХУЙНЯ КАКАЯ-ТО
         const response = await fetchWithCookies(`${XUI_DASHBOARD_URL}/panel/api/inbounds/list`, {
@@ -289,7 +298,11 @@ class XUI_API{
             }
         });
 
+        console.log("check log 17");
+
         const data = await response.json();
+
+        console.log("check log 18");
 
         //проверка условия возврата пользователей
         if(data.success){
