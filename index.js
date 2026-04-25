@@ -959,7 +959,7 @@ async function confirmOffer(offerInfo, response){
         // Создаем резервную вечную подписку
         if(isUserHasEmptyDefCon){
 
-            const defSubGbLimit = 0.33;
+            const defSubGbLimit = 1;
 
             const shortTID = EncodeBase62BigInt(offerInfo._user.telegram_id);
 
